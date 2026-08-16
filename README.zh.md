@@ -152,7 +152,7 @@ dsh --profile <profile>
 
 这是 Windows 下不使用插件安装命令的推荐方式。它只修改指定 Profile，不修改 DSH 安装目录或核心包。
 
-需要更短的逐文件教程时，可查看 [奶龙也能看懂的食用说明.txt](奶龙也能看懂的食用说明.txt)；其英文对应版为 [Tutorials that even Peppa Pig can understand.txt](Tutorials%20that%20even%20Peppa%20Pig%20can%20understand.txt)。
+需要更短的逐文件教程时，可查看 [奶龙也能看懂的食用说明.txt](奶龙也能看懂的食用说明.txt)；其英文对应版为 [Tutorials that even Peppa Pig can understand](Tutorials%20that%20even%20Peppa%20Pig%20can%20understand)。
 
 ### 开始前先确认
 

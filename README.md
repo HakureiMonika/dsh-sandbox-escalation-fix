@@ -175,7 +175,7 @@ dsh --profile <profile>
 
 A detailed Windows walkthrough — Profile paths, folder layout, nested `node_modules`, and the correct replacement for an empty `[]` patch — is available in [README.zh.md](README.zh.md#手动覆盖安装).
 
-For a compact file-by-file walkthrough, see [Tutorials that even Peppa Pig can understand.txt](Tutorials%20that%20even%20Peppa%20Pig%20can%20understand.txt). The original Chinese layout is preserved in [奶龙也能看懂的食用说明.txt](奶龙也能看懂的食用说明.txt).
+For a compact file-by-file walkthrough, see [Tutorials that even Peppa Pig can understand](Tutorials%20that%20even%20Peppa%20Pig%20can%20understand). The original Chinese layout is preserved in [奶龙也能看懂的食用说明.txt](奶龙也能看懂的食用说明.txt).
 
 The minimum manual layout is:
 

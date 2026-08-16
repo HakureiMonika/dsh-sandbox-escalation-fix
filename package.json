@@ -33,10 +33,11 @@
   },
   "files": [
     "lib",
+    "assets",
     "cordis.patch.yml",
     "README.md",
     "README.zh.md",
-    "Beginner-Friendly Installation Guide.txt",
+    "Tutorials that even Peppa Pig can understand",
     "奶龙也能看懂的食用说明.txt",
     "LICENSE"
   ],
