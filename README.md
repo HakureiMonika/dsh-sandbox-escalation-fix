@@ -5,6 +5,16 @@ English | [中文](README.zh.md)
 > [!IMPORTANT]
 > This is an independent community plugin. It is not published, maintained, or endorsed by DeepSeek, and it does not modify DeepSeek Harness core packages.
 
+**dsh-sandbox-escalation-fix** is a zero-configuration compatibility plugin that directly resolves the issue of third-party models like GPT failing to call tools such as `bash`, `pwsh`, `write`, and `edit` under DSH All Access, resulting in repeated retries due to incorrect sandbox escalation parameter prompts.
+
+If you've encountered the following errors, this plugin is designed for them:
+
+```text
+Error: invalid justification: expected a non-empty sentence
+Error: sandbox escalation to "danger-full-access" is not strictly wider than this call's current "danger-full-access" mode
+Error: sandbox escalation to "workspace-write" is not strictly wider than this call's current "danger-full-access" mode
+```
+
 ## Contents
 
 - [What It Does](#what-it-does)
