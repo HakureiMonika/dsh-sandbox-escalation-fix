@@ -5,6 +5,16 @@
 > [!IMPORTANT]
 > 这是独立开发的社区插件，不是 DeepSeek 官方发布、维护或背书的插件。它不会修改 DeepSeek Harness 的核心代码。
 
+**dsh-sandbox-escalation-fix** 是一个零配置兼容插件，直接解决 GPT 等第三方模型在 DSH All Access 下调用 `bash`、`pwsh`、`write`、`edit` 等工具时，因为错误的沙箱升级参数提示而调用失败、反复重试的问题。
+
+如果你遇到过下面这些错误，这个插件就是针对它们的：
+
+```text
+Error: invalid justification: expected a non-empty sentence
+Error: sandbox escalation to "danger-full-access" is not strictly wider than this call's current "danger-full-access" mode
+Error: sandbox escalation to "workspace-write" is not strictly wider than this call's current "danger-full-access" mode
+```
+
 ## 目录
 
 - [这是什么？](#这是什么)
