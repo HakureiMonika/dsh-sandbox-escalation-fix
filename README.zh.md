@@ -60,11 +60,15 @@ DSH 工具注册时会公开静态的升级字段，但真正可以请求的升�
 
 ![安装前：Edit 与 Pwsh 在完成实际工作前反复失败](assets/before-repeated-errors.png)
 
+<br>红彤彤的真喜庆。
+
 ### 安装后：工具可以连续完成工作流
 
 安装插件后，同一模型可以连续执行 Edit、Read、Pwsh、格式化、测试、Lint 和 Type Check，不再进入无效升级循环。
 
 ![安装后：Edit、Read 与 Pwsh 连续完成多步骤开发工作流](assets/after-successful-tools.png)
+
+<br>效果非常显著。
 
 ## 为什么选择它？
 
