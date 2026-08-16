@@ -1,0 +1,74 @@
+import { describe, expect, it } from 'vitest'
+import type { Agent } from '@deepseek-ai/dsh-agent'
+import type { ToolDefinition, ToolRunContext } from '@deepseek-ai/dsh-tools'
+import type { SessionId } from '@deepseek-ai/dsh-session'
+import { createWrapperBinding } from '../src/wrapper.ts'
+
+function agent(): Agent {
+  return { id: 'a' as SessionId } as Agent
+}
+
+function tool(executions: unknown[]): ToolDefinition {
+  return {
+    name: 'pwsh',
+    description: 'original',
+    parameters: { type: 'object', properties: {} },
+    output: {
+      schema: { type: 'string' },
+      render: (_args, value) => [{ type: 'text', text: value as string }],
+    },
+    execute(args): Promise<unknown> {
+      executions.push(args)
+      return Promise.resolve('ok')
+    },
+  }
+}
+
+describe('wrapper chain', () => {
+  it('projects schemas and executes layers in stable priority order', async () => {
+    const executions: unknown[] = []
+    const order: string[] = []
+    const binding = createWrapperBinding(agent(), tool(executions), {
+      owner: 'z',
+      priority: 20,
+      projectDescription: value => `${value}:z`,
+      execute: async (args, _exec, next) => {
+        order.push('z')
+        return next({ ...(args as object), z: true })
+      },
+    })
+    binding.contribute({
+      owner: 'a',
+      priority: 10,
+      projectDescription: value => `${value}:a`,
+      execute: async (args, _exec, next) => {
+        order.push('a')
+        return next({ ...(args as object), a: true })
+      },
+    })
+    expect(binding.definition.description).toBe('original:a:z')
+    await binding.definition.execute({}, {} as ToolRunContext)
+    expect(order).toEqual(['a', 'z'])
+    expect(executions).toEqual([{ a: true, z: true }])
+  })
+
+  it('updates its delegate and removes contributed layers idempotently', async () => {
+    const first: unknown[] = []
+    const second: unknown[] = []
+    const binding = createWrapperBinding(agent(), tool(first), {
+      owner: 'owner',
+      priority: 10,
+    })
+    const releaseOther = binding.contribute({ owner: 'other', priority: 20 })
+
+    await binding.definition.execute({ value: 1 }, {} as ToolRunContext)
+    binding.updateDelegate(tool(second))
+    await binding.definition.execute({ value: 2 }, {} as ToolRunContext)
+
+    expect(first).toEqual([{ value: 1 }])
+    expect(second).toEqual([{ value: 2 }])
+    binding.releaseOwnLayer()
+    releaseOther()
+    releaseOther()
+  })
+})

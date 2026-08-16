@@ -1,0 +1,10 @@
+node_modules/
+lib/
+coverage/
+.npm-cache/
+*.tgz
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

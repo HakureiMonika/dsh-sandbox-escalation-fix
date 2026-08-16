@@ -1,0 +1,85 @@
+0、彻底关闭你的 dsh 。
+
+1、找到你的 dsh 的 home 文件夹，一般在
+ 
+                                                                 C:\Users\<你的用户名>\.dsh                                                            ①
+
+2、进入上述文件夹，然后进入 ①\profiles\web 文件夹，新建一个名为 node_modules 的文件夹，并进入，现在你所在路径应该是
+
+                                            C:\Users\<你的用户名>\.dsh\profiles\web\node_modules                                     ②
+
+3、将压缩包解压，解压得到名为 dsh-sandbox-escalation-fix 的文件夹（前半步你已经做了）。注意，这个压缩包先要解压到其他路径，例如
+
+                                                                 D:\dsh-sandbox-escalation-fix                                                         ③
+
+4、进入③中，复制以下文件与文件夹（只需要这些）
+
+                                                                              package.json                                             （文件） ─┐
+				            cordis.patch.yml                                           （文件）─┼───④
+				              README.md                                              （文件）─┤
+				                     lib\                                                  （文件夹）─┘
+
+5、回到②，在②中创建名为 dsh-sandbox-escalation-fix 的文件夹，并进入，此时路径如下
+
+                               C:\Users\<你的用户名>\.dsh\profiles\web\node_modules\dsh-sandbox-escalation-fix        ⑤
+
+6、在⑤中粘贴④，此时确认目录结构如下
+
+                                                                 <Profile目录>\
+                                                                 ├── cordis.patch.yml
+                                                                 ├── package.json
+                                                                 └── node_modules\
+                                                                     └── dsh-sandbox-escalation-fix\
+                                                                         ├── package.json
+                                                                         ├── cordis.patch.yml
+                                                                         ├── README.md
+                                                                         └── lib\                                                                                   ⑥
+
+7、回到①，进入 ①\profiles\web 文件夹中，找到文件 cordis.patch.yml ，双击进行编辑，此时编辑路径为
+
+                                               C:\Users\<你的用户名>\.dsh\profiles\web\cordis.patch.yml                                 ⑦
+
+8、初始内容应该是一段英语注释与“[]”字符（见⑧）。请将其替换为最下面的形式（注意替换的部分的缩进！）
+
+# Your patch layer for this dsh profile, applied after every bundle layer:
+# a top-level YAML array of loader patch entries (id-targeted config                                                                  ⑧
+# overrides, disables, and insert lists; `!!js` expressions allowed).
+[]
+
+                                              ↓
+
+# Your patch layer for this dsh profile, applied after every bundle layer:
+# a top-level YAML array of loader patch entries (id-targeted config
+# overrides, disables, and insert lists; `!!js` expressions allowed).
+- insert:
+    - id: sandbox-escalation-fix
+      name: dsh-sandbox-escalation-fix
+
+【注意】- insert: 必须顶格。替换部分第五行的缩进是四个空格，第六行是六个空格。请使用空格缩进，不要使用 Tab。
+
+9、重启 dsh 并验证以下内容
+
+按原来的方式启动该 Profile，新建 Session，然后在 All Access 下要求模型执行简单 Shell 命令或写入文件。               ⑨
+
+修复生效时，OAI 系列模型不再因为重复发送 danger-full-access 升级参数而导致工具调用失败。若仍看到旧行为，请确认修改的是当前实际启动的 Profile，并彻底退出 dsh 后重新启动。
+
+10、安装后检查表
+
+ profiles\web\cordis.patch.yml 中只有一个 id: sandbox-escalation-fix 。
+ Patch 中没有 [ 、 ]  或包住整段配置的引号。
+插件的 package.json 直接位于 node_modules\dsh-sandbox-escalation-fix 下。
+插件目录包含 lib\index.mjs 。
+插件目录内部不存在第二个 node_modules 。
+ DSH 已完全退出并重启。
+测试使用的是重启后新建的 Session 。
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,8 @@
+.npm-cache/
+coverage/
+*.tgz
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

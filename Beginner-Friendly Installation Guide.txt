@@ -1,0 +1,82 @@
+0. Fully close dsh.
+
+1. Find your dsh home folder. It is usually located at
+ 
+                                                                 C:\Users\<your username>\.dsh                                                        ①
+
+2. Open that folder, enter ①\profiles\web, create a folder named node_modules, and open it. Your current path should be
+
+                                            C:\Users\<your username>\.dsh\profiles\web\node_modules                               ②
+
+3. Extract the archive. It produces a folder named dsh-sandbox-escalation-fix (you have already completed the first half of this step). Extract the archive somewhere else first, for example
+
+                                                                 D:\dsh-sandbox-escalation-fix                                                         ③
+
+4. Open ③ and copy only the following files and folder
+
+                                                                              package.json                                             (file) ─┐
+				            cordis.patch.yml                                          (file) ─┼───④
+				              README.md                                               (file) ─┤
+				                     lib\                                                (folder) ─┘
+
+5. Return to ②, create a folder named dsh-sandbox-escalation-fix inside it, and open that folder. The path is now
+
+                               C:\Users\<your username>\.dsh\profiles\web\node_modules\dsh-sandbox-escalation-fix  ⑤
+
+6. Paste ④ into ⑤, then confirm that the directory structure is
+
+                                                                 <Profile directory>\
+                                                                 ├── cordis.patch.yml
+                                                                 ├── package.json
+                                                                 └── node_modules\
+                                                                     └── dsh-sandbox-escalation-fix\
+                                                                         ├── package.json
+                                                                         ├── cordis.patch.yml
+                                                                         ├── README.md
+                                                                         └── lib\                                                                                   ⑥
+
+7. Return to ①, open ①\profiles\web, find cordis.patch.yml, and double-click it to edit. The file path is
+
+                                               C:\Users\<your username>\.dsh\profiles\web\cordis.patch.yml                           ⑦
+
+8. The initial content should contain an English comment followed by the characters "[]" (see ⑧). Replace it with the form shown at the bottom. Pay attention to indentation.
+
+# Your patch layer for this dsh profile, applied after every bundle layer:
+# a top-level YAML array of loader patch entries (id-targeted config                                                                  ⑧
+# overrides, disables, and insert lists; `!!js` expressions allowed).
+[]
+
+                                              ↓
+
+# Your patch layer for this dsh profile, applied after every bundle layer:
+# a top-level YAML array of loader patch entries (id-targeted config
+# overrides, disables, and insert lists; `!!js` expressions allowed).
+- insert:
+    - id: sandbox-escalation-fix
+      name: dsh-sandbox-escalation-fix
+
+[IMPORTANT] - insert: must start at the beginning of the line. In the replacement block, the fifth line uses four spaces and the sixth line uses six spaces. Use spaces, not Tab.
+
+9. Restart dsh and verify the following
+
+Start the same Profile as usual, create a new Session, then ask the model under All Access to run a simple Shell command or write a file.                                           ⑨
+
+When the fix works, OAI models no longer fail tool calls because they repeatedly send a danger-full-access escalation argument. If the old behavior remains, confirm that you edited the Profile you actually start, fully close dsh, and start it again.
+
+10. Post-installation checklist
+
+ profiles\web\cordis.patch.yml contains exactly one id: sandbox-escalation-fix entry.
+ The Patch does not contain [ or ] and does not wrap the entire configuration in quotation marks.
+The plugin package.json is directly under node_modules\dsh-sandbox-escalation-fix.
+The plugin directory contains lib\index.mjs.
+The plugin directory does not contain another node_modules folder.
+ dsh was fully closed and restarted.
+The test uses a new Session created after the restart.
+
+
+
+
+
+
+
+
