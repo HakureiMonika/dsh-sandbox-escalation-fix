@@ -3,15 +3,130 @@
 [English](README.md) | 中文
 
 > [!IMPORTANT]
-> 这是独立开发的社区插件，不是 DeepSeek 官方发布、维护或背书的插件。
+> 这是独立开发的社区插件，不是 DeepSeek 官方发布、维护或背书的插件。它不会修改 DeepSeek Harness 的核心代码。
 
-DeepSeek Harness `0.1.0-rc.5` / `0.1.0-rc.6` 兼容插件。它按每个 Agent 的实际 Sandbox Mode 和 Approval Policy 动态修正 `bash`、`pwsh`、`write`、`edit` 的升级参数广告，并清理无法执行的前台 Shell、FS 失败及 `job_output` 升级提示。
+## 这是什么？
 
-插件不修改 DSH 核心包。Native Tool Schema 与 Code Mode SDK 都从 Agent Exact Scope 的同一份包装定义读取，因此对所有模型统一生效。
+一句话说明：**这个插件让 DeepSeek Harness 只把“当前会话真正能用”的沙箱升级选项展示给模型。**
 
-## 不只是执行期止血
+在 `danger-full-access + approval=never` 这类 All Access 会话里，DSH 原版仍然会在 `bash`、`pwsh`、`write`、`edit` 工具中向模型展示 `sandbox_permissions` 和 `justification` 两个参数。但此时：
 
-有些兼容修复只在模型已经拿到不可用 Schema 之后，于工具执行前删除参数。本插件同时修复模型可见输入、执行期安全语义和失败反馈，使三者与当前 Session 的权限状态一致。
+- 当前权限已经是最高级，没有更宽的权限可以升；
+- 审批策略又是 `never`，所有审批请求都会被自动拒绝。
+
+于是模型一旦填写这两个参数，调用就会在执行前失败，然后模型可能反复重试，陷入“报错 → 换参数 → 再报错”的循环。
+
+本插件会根据**每个 Session 当前的 Sandbox Mode 和 Approval Policy**，动态调整模型看到的工具参数和说明；同时在执行前做一层最小兜底，把同模式的冗余请求安全地处理掉。
+
+## 它能解决什么问题？
+
+- 模型在 All Access 下仍能看到并填写 `sandbox_permissions` / `justification`，导致工具还没执行就报错。
+- 模型在 `workspace-write` 下看到两个升级目标，但其实只有 `danger-full-access` 是真正更宽的选项。
+- 模型在 `approval=never` 下仍然被提示“可以升级”，但所有升级都会被拒绝。
+- 工具描述和错误结果里继续出现“升级可用”的提示，诱导模型反复重试。
+- Native Tool Call 和 Code Mode SDK 展示不一致，一边修好了、另一边还在误导模型。
+
+## 为什么选择它？
+
+### 它解决的是根因，而不是只让报错消失
+
+很多修复方案只在模型已经拿到错误 Schema 之后，于执行前把参数删掉。这样做调用虽然不报错了，但模型仍然会继续看到、继续发送这些无效参数。
+
+本插件会按每个 Session 的实时权限状态，动态投影模型真正可见的工具参数：
+
+| 当前模式 | 审批策略 | 模型看到的结果 |
+|---|---|---|
+| `read-only` | `ask` | `workspace-write`、`danger-full-access` |
+| `workspace-write` | `ask` | 仅 `danger-full-access` |
+| `danger-full-access` | `ask` | 不展示升级参数 |
+| 任意模式 | `never` | 不展示升级参数 |
+
+模型看不到当前不可能成功的参数，自然就不会去使用它。
+
+### 它不会只修 Native Tool Call，而漏掉 Code Mode
+
+插件的参数投影发生在 Agent 精确作用域的工具定义上。原生工具调用和 Code Mode SDK 读取的是同一份投影结果：
+
+- 原生工具 Schema 里不会出现无效升级字段；
+- Code Mode 生成的 TypeScript/Python SDK 里同样不会出现；
+- 两种模式的行为始终一致。
+
+不会出现“原生调用已经修好，模型走 `run_code` 仍然看到并误用旧参数”的半成品状态。
+
+### 它不会静默吞掉降级请求
+
+执行兜底只做一件非常克制的事：当且仅当 `requestedMode === effectiveMode` 时，把冗余参数视为幂等请求并移除，然后按普通调用执行。
+
+对于降级请求或非法值，插件会原样保留，交给 DSH 原有的安全逻辑处理：
+
+- `danger-full-access` 下请求 `danger-full-access` → 忽略，正常执行；
+- `danger-full-access` 下请求 `workspace-write` → 不会被擅自当成 Full access 执行；
+- `read-only` 下请求更宽模式 → 原样进入审批流程。
+
+它不会为了“少报一个错”，就把调用者显式要求的更窄权限静默替换成更宽权限。
+
+### 它不会自动填充一个虚假的审批理由
+
+对于真正需要升级的请求，插件不会自动编造或填充占位 justification。缺失、空白或非法的理由仍然由 DSH 原有校验逻辑处理，保证审批流程看到的信息真实、可审计。
+
+### 它不会一边说“不要升级”，一边又在结果里提示“升级可用”
+
+当会话没有合法升级目标时，插件除了隐藏参数，还会同步处理模型看到的自然语言：
+
+- 工具描述中的升级引导段落会被裁剪；
+- Shell、文件工具和 `job_output` 结果中已不成立的 `escalation available` 提示会被清理。
+
+模型看到的参数、描述和执行结果不会再互相矛盾。
+
+### 它不会修改或绕过 DSH 的安全核心
+
+`approveEscalation()` 的严格变宽检查、审批流程、一次性授权语义都保持原样。插件只做模型可见面的投影和调用前的最小兼容处理：
+
+- 不删除严格变宽检查；
+- 不在 `approval=never` 时自动批准升级；
+- 不授予任何额外权限；
+- 不修改 DSH 安装目录或核心包。
+
+### 它不会把同一进程里的不同 Session 一刀切
+
+插件按 Agent/Session 独立包装，不修改全局工具注册表。因此同一个进程中：
+
+```text
+Session A = read-only + ask              → 看到两个升级目标
+Session B = danger-full-access + never   → 看不到升级字段
+```
+
+各自互不影响。Session 中途切换权限后，下一次模型请求的工具 Schema 也会立即按新状态重新计算。
+
+### 它不会在 Agent 销毁或工具替换后留下残留包装
+
+插件完整监听 Agent 创建、销毁、Preset 切换和工具变更事件。新工具出现时自动接入，工具替换后自动重新解析父级定义，Agent 销毁或插件卸载后自动恢复原始定义。
+
+### 它不会只支持单一 DSH 版本
+
+插件同时支持 DSH `0.1.0-rc.5` 和 `0.1.0-rc.6`，并在加载时校验 DSH 各包版本是否一致且受支持。遇到不兼容的工具定义会主动拒绝安装，而不是在运行中产生难以排查的诡异行为。
+
+### 它不会给你增加配置负担
+
+零配置，安装到实际使用的 Profile 后即可生效。测试覆盖 20 项，包含真实 DSH 包的集成验证，覆盖 Schema 投影、Code Mode SDK、工具替换、失败提示清理与插件卸载失效等关键路径。
+
+## 安装前后对比
+
+未安装插件时，受影响的 All Access Session 可能在实际操作开始前反复失败。模型会在空白 `justification`、同模式 `danger-full-access` 请求，甚至会被 DSH 正确拒绝的降级请求之间循环。
+
+### 安装前：参数校验与升级错误反复出现
+
+![安装前：invalid justification 与非严格变宽的 Sandbox 升级错误反复出现](assets/before-errors-overview.png)
+
+![安装前：Edit 与 Pwsh 在完成实际工作前反复失败](assets/before-repeated-errors.png)
+
+### 安装后：工具可以连续完成工作流
+
+安装插件后，同一模型可以连续执行 Edit、Read、Pwsh、格式化、测试、Lint 和 Type Check，不再进入无效升级循环。
+
+![安装后：Edit、Read 与 Pwsh 连续完成多步骤开发工作流](assets/after-successful-tools.png)
+
+## 与其他“仅执行期止血”方案的区别
 
 | 能力 | 本插件 | 仅执行期参数正规化 |
 |---|---|---|
@@ -23,10 +138,6 @@ DeepSeek Harness `0.1.0-rc.5` / `0.1.0-rc.6` 兼容插件。它按每个 Agent �
 | 清理描述与结果中的无效升级建议 | 覆盖 Shell、FS、Code Mode、`job_output` | 不支持 |
 | 响应 Agent、Preset 和工具生命周期变化 | 支持 | 取决于实现 |
 
-执行期兜底只处理 `requestedMode === effectiveMode`：这类请求是对当前权限的幂等重复。`danger-full-access → workspace-write` 等显式降级请求不会被删除后按更宽权限执行；缺失或空白的审批理由也不会被替换为虚构占位文本。
-
-插件不修改 `approveEscalation()`，不授予权限，不自动批准请求，也不削弱严格变宽检查。它只修正模型可以合法请求的参数，并在原 DSH 工具接管调用前删除一对精确同模式的冗余参数。
-
 ## 快速使用
 
 插件为零配置修复。安装到实际使用的 Profile 后，继续按原方式启动 DSH 即可：
@@ -37,11 +148,11 @@ dsh --profile <profile>
 
 无需修改模型配置、Sandbox Mode、Approval Policy 或 Agent Preset。插件会按每个 Session 的当前权限状态动态决定模型可见参数。
 
-## 手动覆盖安装
+## 手动覆盖安装（Windows）
 
 这是 Windows 下不使用插件安装命令的推荐方式。它只修改指定 Profile，不修改 DSH 安装目录或核心包。
 
-需要更短的逐文件教程时，可查看 [奶龙也能看懂的食用说明.txt](奶龙也能看懂的食用说明.txt)；其英文对应版为 [Beginner-Friendly Installation Guide.txt](Beginner-Friendly%20Installation%20Guide.txt)。
+需要更短的逐文件教程时，可查看 [奶龙也能看懂的食用说明.txt](奶龙也能看懂的食用说明.txt)；其英文对应版为 [Tutorials that even Peppa Pig can understand.txt](Tutorials%20that%20even%20Peppa%20Pig%20can%20understand.txt)。
 
 ### 开始前先确认
 
@@ -83,19 +194,7 @@ C:\Users\<你的用户名>\.dsh\profiles\web
 
 如果配置过 `DSH_HOME`，请把上面的 `C:\Users\<你的用户名>\.dsh` 换成实际目录。若 `profiles\web` 尚不存在，先正常启动一次 DSH Web，让它初始化 Profile。
 
-这里所说的 Profile 根目录即：
-
-```text
-%USERPROFILE%\.dsh\profiles\web
-```
-
-不是：
-
-```text
-%USERPROFILE%\.dsh
-```
-
-因此，看到 `.dsh` 根目录没有 `cordis.patch.yml` 时，不需要创建；继续进入 `profiles\web` 修改其中已有的文件。
+注意：这里说的是 Profile 根目录 `%USERPROFILE%\.dsh\profiles\web`，**不是** `%USERPROFILE%\.dsh`。看到 `.dsh` 根目录没有 `cordis.patch.yml` 是正常的，不需要创建；继续进入 `profiles\web` 修改其中已有的文件即可。
 
 ### 3. 覆盖插件目录
 
@@ -105,23 +204,13 @@ C:\Users\<你的用户名>\.dsh\profiles\web
 <Profile目录>\node_modules\dsh-sandbox-escalation-fix
 ```
 
-当前本地构建的源目录是：
-
-```text
-D:\deepseek-harness\plugins\dsh-sandbox-escalation-fix
-```
-
 Web Profile 的默认目标目录是：
 
 ```text
 %USERPROFILE%\.dsh\profiles\web\node_modules\dsh-sandbox-escalation-fix
 ```
 
-如果该目录已经存在，先将整个目录改名为：
-
-```text
-dsh-sandbox-escalation-fix.backup
-```
+如果该目录已经存在，先将整个目录改名为 `dsh-sandbox-escalation-fix.backup`。
 
 然后从本项目目录复制以下内容到新的 `dsh-sandbox-escalation-fix` 目录：
 
@@ -132,7 +221,7 @@ README.md
 lib\
 ```
 
-也可以直接把整个 `dsh-sandbox-escalation-fix` 文件夹复制到 Profile 的 `node_modules`。这种方式可以运行，但复制完成后必须删除：
+也可以直接把整个 `dsh-sandbox-escalation-fix` 文件夹复制到 Profile 的 `node_modules`，但复制完成后必须删除：
 
 ```text
 <Profile目录>\node_modules\dsh-sandbox-escalation-fix\node_modules
@@ -158,11 +247,15 @@ lib\
             └── wrapper-protocol.d.mts
 ```
 
-不要复制本项目的 `node_modules`。也不需要复制 `src`、`tests`、`tsconfig.json` 或构建工具配置。手动安装包必须已经包含 `lib\index.mjs`；只有源码而没有 `lib` 的 ZIP 不能直接使用此方法。
+注意：
 
-不要把插件自己的 `cordis.patch.yml` 直接覆盖到 Profile 根目录；Profile 根目录中的同名文件可能包含其他用户配置，必须按下一步手动合并。
+- 不要复制本项目的 `node_modules`。
+- 不需要复制 `src`、`tests`、`tsconfig.json` 或构建工具配置。
+- 手动安装包必须已经包含 `lib\index.mjs`；只有源码而没有 `lib` 的 ZIP 不能直接使用此方法。
+- 不要把插件自己的 `cordis.patch.yml` 直接覆盖到 Profile 根目录；Profile 根目录中的同名文件可能包含其他用户配置，必须按下一步手动合并。
+- 确认没有多套一层同名目录。
 
-还要确认没有多套一层同名目录。正确入口是：
+正确入口是：
 
 ```text
 <Profile目录>\node_modules\dsh-sandbox-escalation-fix\package.json
@@ -213,7 +306,7 @@ lib\
 
 顶部注释可以保留，只替换最后一行 `[]`。
 
-以下两种写法都不要使用：
+以下两种写法都**不要**使用：
 
 ```yaml
 [- insert:
@@ -247,13 +340,13 @@ lib\
 
 ### 安装后检查表
 
-- `profiles\web\cordis.patch.yml` 中只有一个 `id: sandbox-escalation-fix`。
-- Patch 中没有 `[`、`]` 或包住整段配置的引号。
-- 插件的 `package.json` 直接位于 `node_modules\dsh-sandbox-escalation-fix` 下。
-- 插件目录包含 `lib\index.mjs`。
-- 插件目录内部不存在第二个 `node_modules`。
-- DSH 已完全退出并重启。
-- 测试使用的是重启后新建的 Session。
+- [ ] `profiles\web\cordis.patch.yml` 中只有一个 `id: sandbox-escalation-fix`。
+- [ ] Patch 中没有 `[`、`]` 或包住整段配置的引号。
+- [ ] 插件的 `package.json` 直接位于 `node_modules\dsh-sandbox-escalation-fix` 下。
+- [ ] 插件目录包含 `lib\index.mjs`。
+- [ ] 插件目录内部不存在第二个 `node_modules`。
+- [ ] DSH 已完全退出并重启。
+- [ ] 测试使用的是重启后新建的 Session。
 
 ### 手动更新
 
@@ -361,24 +454,36 @@ dsh --profile <profile> --dump-config
 
 ## 验证证据
 
-自动测试直接使用真实 DSH `SessionStore`、`ToolRuntime`、`AgentRegistry`、`SandboxPolicyService`、`ApprovalService` 和 `SystemPrompt` 包，而不只测试隔离 Mock。20 项测试覆盖权限矩阵、精确同模式正规化、Native Schema 投影、Code Mode SDK 生成、Delegate 替换、包装协作与冲突拒绝、Shell/FS/`job_output` 提示过滤、版本检查和插件卸载失效。
+自动测试直接使用真实 DSH `SessionStore`、`ToolRuntime`、`AgentRegistry`、`SandboxPolicyService`、`ApprovalService` 和 `SystemPrompt` 包，而不是只测试隔离 Mock。20 项测试覆盖：
+
+- 权限矩阵；
+- 精确同模式正规化；
+- Native Schema 投影；
+- Code Mode SDK 生成；
+- Delegate 替换；
+- 包装协作与冲突拒绝；
+- Shell / FS / `job_output` 提示过滤；
+- 版本检查；
+- 插件卸载失效。
 
 自动测试不能替代真实模型 Provider 的 E2E 证据。上方人工清单用于验证完整 Web 会话生命周期和受影响的 OAI All Access 工作流。
 
-## 行为
+## 插件行为一览
 
-- `danger-full-access` 或 Approval Policy 为 `never` 时，不向模型广告 `sandbox_permissions` 与 `justification`。
-- `workspace-write` 且允许审批时，只广告 `danger-full-access`。
-- `read-only` 且允许审批时，广告 `workspace-write` 与 `danger-full-access`。
-- 模型发送与当前模式完全相同的冗余升级参数时，包装器删除这一对参数后委托原工具。
-- 降级、未知目标、缺少配对参数和真实升级请求仍交给原工具严格验证。
-- 无合法升级目标时，删除 Shell 描述尾部的升级说明，并清理与 Sandbox Denial Marker 同时出现的无效提示。
+| 场景 | 插件行为 |
+|---|---|
+| `danger-full-access` 或 Approval Policy 为 `never` | 不向模型广告 `sandbox_permissions` 与 `justification` |
+| `workspace-write` 且允许审批 | 只广告 `danger-full-access` |
+| `read-only` 且允许审批 | 广告 `workspace-write` 与 `danger-full-access` |
+| 模型发送与当前模式完全相同的冗余升级参数 | 包装器删除这一对参数后委托原工具 |
+| 降级、未知目标、缺少配对参数和真实升级请求 | 仍交给原工具严格验证 |
+| 无合法升级目标 | 删除 Shell 描述尾部的升级说明，并清理与 Sandbox Denial Marker 同时出现的无效提示 |
 
-## 冲突
+## 与其他包装插件协作
 
-插件占用每个 Agent Exact Scope 中的 `bash`、`pwsh`、`write`、`edit` 名称。
+插件会占用每个 Agent Exact Scope 中的 `bash`、`pwsh`、`write`、`edit` 名称。
 
-另一个包装插件只有在同名工具暴露 `Symbol.for('dsh.tool-wrapper.v1')` 协议时才能链式协作。包装层按 `priority`、`owner` 稳定排序。未知同名工具会让 Agent 注册严格失败，避免静默改变包装顺序或错误语义；此时必须由用户选择保留其中一个插件。
+另一个包装插件只有在同名工具暴露 `Symbol.for('dsh.tool-wrapper.v1')` 协议时才能与本插件链式协作。包装层按 `priority`、`owner` 稳定排序。如果同名工具没有实现协作协议，Agent 注册会明确失败，避免静默改变包装顺序或产生错误语义；此时必须由用户选择保留其中一个插件。
 
 协议类型可从以下入口导入：
 
@@ -408,15 +513,17 @@ dsh --profile <profile> --dump-config
 
 ## 故障排查
 
-- **安装后没有生效：**确认安装和启动使用同一个 `--profile`，并通过 `--dump-config` 检查插件层。
-- **`.dsh` 根目录没有 `cordis.patch.yml`：**这是正常的；Web Profile 应修改 `.dsh\profiles\web\cordis.patch.yml`。
-- **不知道 `[]` 怎么改：**保留注释，只把独占一行的 `[]` 替换为不带方括号的 `- insert:` YAML 块。
-- **复制了整个开发文件夹：**可以保留，但必须删除目标插件目录内部的 `node_modules`，并确认没有多套一层同名目录。
-- **YAML 启动报错：**检查 `- insert:` 是否顶格、是否误加了方括号或引号，以及缩进是否只使用空格。
-- **Git 安装构建失败：**确认 Profile 的 `pnpm-workspace.yaml` 已允许构建 `dsh-sandbox-escalation-fix`，然后重新安装。
-- **启动时报版本错误：**不要混装 rc.5 与 rc.6 包；让 Profile 中关键 `@deepseek-ai/dsh-*` 包保持同一版本。
-- **Agent 注册时报同名工具冲突：**另一个插件已在 Agent Exact Scope 注册 `bash`、`pwsh`、`write` 或 `edit`，且未实现协作协议；只能卸载其中一个。
-- **升级字段仍然出现：**确认查看的是安装后新建 Session 的 Schema，并确认没有后加载的插件替换同名工具。
+| 问题 | 处理方式 |
+|---|---|
+| 安装后没有生效 | 确认安装和启动使用同一个 `--profile`，并通过 `--dump-config` 检查插件层 |
+| `.dsh` 根目录没有 `cordis.patch.yml` | 这是正常的；Web Profile 应修改 `.dsh\profiles\web\cordis.patch.yml` |
+| 不知道 `[]` 怎么改 | 保留注释，只把独占一行的 `[]` 替换为不带方括号的 `- insert:` YAML 块 |
+| 复制了整个开发文件夹 | 可以保留，但必须删除目标插件目录内部的 `node_modules`，并确认没有多套一层同名目录 |
+| YAML 启动报错 | 检查 `- insert:` 是否顶格、是否误加了方括号或引号，以及缩进是否只使用空格 |
+| Git 安装构建失败 | 确认 Profile 的 `pnpm-workspace.yaml` 已允许构建 `dsh-sandbox-escalation-fix`，然后重新安装 |
+| 启动时报版本错误 | 不要混装 rc.5 与 rc.6 包；让 Profile 中关键 `@deepseek-ai/dsh-*` 包保持同一版本 |
+| Agent 注册时报同名工具冲突 | 另一个插件已在 Agent Exact Scope 注册 `bash`、`pwsh`、`write` 或 `edit`，且未实现协作协议；只能卸载其中一个 |
+| 升级字段仍然出现 | 确认查看的是安装后新建 Session 的 Schema，并确认没有后加载的插件替换同名工具 |
 
 ## 支持范围
 

@@ -2,16 +2,129 @@
 
 English | [中文](README.zh.md)
 
-A zero-configuration compatibility plugin for DeepSeek Harness `0.1.0-rc.5` and `0.1.0-rc.6`. It prevents models from receiving or repeating sandbox escalation arguments that the current Sandbox Mode and Approval Policy cannot execute.
-
-The plugin wraps `bash`, `pwsh`, `write`, and `edit` inside each Agent Exact Scope. Native tool schemas and the Code Mode SDK therefore read the same session-aware definitions. It also removes impossible escalation advice from foreground Shell failures, filesystem failures, Code Mode errors, and background `job_output` results.
-
 > [!IMPORTANT]
-> This is an independent community plugin. It is not published, maintained, or endorsed by DeepSeek. It does not modify DeepSeek Harness core packages.
+> This is an independent community plugin. It is not published, maintained, or endorsed by DeepSeek, and it does not modify DeepSeek Harness core packages.
 
-## Why This Is More Than an Execution Workaround
+## What It Does
 
-Some compatibility fixes normalize arguments only after a model has already received an unusable tool schema. This plugin fixes the model-visible input, preserves DSH's security semantics at execution time, and keeps failure feedback consistent with the active policy.
+This plugin makes DeepSeek Harness show the model **only the sandbox escalation options that the current session can actually use**.
+
+In an All Access session (`danger-full-access` + `never`), the stock DSH tools still advertise `sandbox_permissions` and `justification` on `bash`, `pwsh`, `write`, and `edit`. But in that state:
+
+- the session is already at the highest sandbox mode, so no wider mode exists;
+- the approval policy is `never`, so every escalation request is rejected.
+
+When a model fills in those parameters, the call fails before it runs. The model may then retry with different values and get stuck in a loop.
+
+This plugin projects the model-visible tool schema per session, based on the live Sandbox Mode and Approval Policy. It also adds a minimal execution-time fallback for redundant same-mode requests.
+
+## The Problem It Solves
+
+- Models still see and send `sandbox_permissions` / `justification` in All Access sessions, so tools fail before they run.
+- In `workspace-write` sessions, models see two escalation targets even though only `danger-full-access` is genuinely wider.
+- With `approval=never`, models are still told escalation is possible when every request will be rejected.
+- Tool descriptions and denial results keep saying “escalation available,” which pushes the model to retry.
+- Native Tool Call and Code Mode SDK can show inconsistent capability surfaces.
+
+## Why This Plugin
+
+### It fixes the root cause, not just the error
+
+Some fixes only delete the arguments after the model has already received a broken schema. Calls stop failing, but the model keeps seeing and sending the same unusable parameters.
+
+This plugin projects the model-visible schema from the session's real permission state:
+
+| Current mode | Approval policy | What the model sees |
+|---|---|---|
+| `read-only` | `ask` | `workspace-write`, `danger-full-access` |
+| `workspace-write` | `ask` | `danger-full-access` only |
+| `danger-full-access` | `ask` | no escalation fields |
+| any mode | `never` | no escalation fields |
+
+When the model cannot see a parameter that cannot succeed, it stops reaching for it.
+
+### It won't fix Native Tool Call but leave Code Mode broken
+
+Projection happens on the tool definition inside each Agent Exact Scope, so Native tool schemas and the Code Mode SDK read the same result:
+
+- Native tool schemas omit impossible escalation fields;
+- Code Mode TypeScript/Python SDKs omit them too;
+- behavior stays identical across both modes.
+
+### It won't silently swallow a downgrade request
+
+The execution fallback is deliberately narrow: it removes `sandbox_permissions` and `justification` only when `requestedMode === effectiveMode`, treating that pair as an idempotent duplicate.
+
+Downgrade or invalid requests are left untouched and go through normal DSH validation:
+
+- `danger-full-access` + request `danger-full-access` → ignored, tool runs normally;
+- `danger-full-access` + request `workspace-write` → not executed as Full access;
+- `read-only` + a wider request → enters the normal approval flow.
+
+It will not trade a clear error for silently running a call with broader access than the caller asked for.
+
+### It won't invent an approval reason
+
+For genuine escalation requests, the plugin does not fill in a fake or placeholder justification. Missing, blank, or invalid reasons still go through DSH's own validation, so the approval flow sees honest, auditable input.
+
+### It won't say “don't escalate” while results say “escalation available”
+
+When the session has no viable escalation target, the plugin also cleans up the natural-language side:
+
+- the escalation guidance tail is removed from Shell tool descriptions;
+- impossible `escalation available` hints are removed from Shell, filesystem, Code Mode, and `job_output` results.
+
+The model no longer receives contradictory instructions from the parameter schema, the description, and the failure output.
+
+### It won't modify or bypass DSH's security core
+
+`approveEscalation()` keeps its strictly-wider check, approval flow, and one-shot authorization semantics. The plugin only projects the model-visible surface and removes one redundant same-mode pair before delegating:
+
+- no removal of the strictly-wider check;
+- no auto-approval when `approval=never`;
+- no extra permissions;
+- no changes to DSH installation or core packages.
+
+### It won't treat every session the same
+
+Wrapping happens per Agent/Session, never on the global tool registry. In the same process:
+
+```text
+Session A = read-only + ask              → sees two escalation targets
+Session B = danger-full-access + never   → sees no escalation fields
+```
+
+Each session is independent. If a session switches permission state mid-flight, the next model request gets a freshly projected schema.
+
+### It won't leave stale wrappers behind
+
+The plugin listens to Agent creation, disposal, Preset changes, and tool changes. New tools are wrapped automatically, replaced tools re-resolve their parent delegate, and disposed Agents or unloaded plugins restore the original definitions.
+
+### It won't lock you to a single DSH release
+
+The plugin supports DSH `0.1.0-rc.5` and `0.1.0-rc.6`. At startup it verifies that the installed `@deepseek-ai/dsh-*` packages are consistent and supported. Incompatible tool definitions fail explicitly instead of producing silent misbehavior.
+
+### It won't add configuration burden
+
+Zero configuration. Install it into the Profile you actually use and start DSH as before. The test suite contains 20 tests built on real DSH packages, covering schema projection, Code Mode SDK generation, delegate replacement, failure-hint cleanup, and unload behavior.
+
+## Before and After
+
+Without the plugin, affected All Access sessions can repeatedly fail before the requested operation runs. The model alternates between an empty `justification`, a same-mode `danger-full-access` request, and even a downgrade request that DSH correctly rejects as not strictly wider.
+
+### Before: Repeated Validation and Escalation Errors
+
+![Before installation: repeated invalid justification and non-widening sandbox escalation errors](assets/before-errors-overview.png)
+
+![Before installation: Edit and Pwsh repeatedly fail before completing the requested work](assets/before-repeated-errors.png)
+
+### After: Tools Complete the Workflow
+
+After installation, the same model can continue through Edit, Read, Pwsh, formatting, tests, lint, and type checking without entering the invalid escalation loop.
+
+![After installation: Edit, Read, and Pwsh complete a multi-step development workflow](assets/after-successful-tools.png)
+
+## This Plugin vs. Execution-Only Normalization
 
 | Capability | This plugin | Execution-only normalization |
 |---|---|---|
@@ -23,10 +136,6 @@ Some compatibility fixes normalize arguments only after a model has already rece
 | Remove impossible advice from descriptions and results | Shell, FS, Code Mode, and `job_output` | no |
 | React to Agent, Preset, and tool lifecycle changes | yes | implementation-dependent |
 
-The execution fallback is intentionally narrow: `requestedMode === effectiveMode` is treated as an idempotent duplicate. A request such as `danger-full-access → workspace-write` is not discarded and then executed with broader access. Missing or blank approval reasons are not replaced with invented placeholder text.
-
-This plugin does not change `approveEscalation()`, grant permissions, auto-approve requests, or weaken the strictly-wider check. It changes what the model can validly request and removes one redundant same-mode pair before the original DSH tool handles the call.
-
 ## Compatibility
 
 - Node.js `^22.19.0` or `>=24.0.0`
@@ -37,10 +146,10 @@ The plugin checks the installed DSH package versions at startup. Mixed rc.5/rc.6
 
 ## Install From GitHub
 
-Install into the exact Profile that runs the affected sessions. Pin a reviewed commit SHA because a Git dependency executes this package's `prepare` script during installation:
+Install into the exact Profile that runs the affected sessions. Pin a reviewed commit SHA, because a Git dependency executes this package's `prepare` script during installation:
 
 ```sh
-dsh plugin --profile <profile> add github:JUSTMONIKA2022/dsh-sandbox-escalation-fix#<commit-sha>
+dsh plugin --profile <profile> add github:<owner>/dsh-sandbox-escalation-fix#<commit-sha>
 ```
 
 pnpm 10 blocks Git dependency build scripts until the Profile explicitly allows them. If the first installation reports a blocked build, add this entry to `$DSH_HOME/profiles/<profile>/pnpm-workspace.yaml`:
@@ -64,9 +173,9 @@ dsh --profile <profile>
 
 ## Manual Windows Installation
 
-The detailed Windows walkthrough, including Profile paths, folder layout, nested `node_modules`, and the correct replacement for an empty `[]` patch, is available in [README.zh.md](README.zh.md#手动覆盖安装).
+A detailed Windows walkthrough — Profile paths, folder layout, nested `node_modules`, and the correct replacement for an empty `[]` patch — is available in [README.zh.md](README.zh.md#手动覆盖安装).
 
-For a compact file-by-file walkthrough, see [Beginner-Friendly Installation Guide.txt](Beginner-Friendly%20Installation%20Guide.txt). The original Chinese layout is preserved in [奶龙也能看懂的食用说明.txt](奶龙也能看懂的食用说明.txt).
+For a compact file-by-file walkthrough, see [Tutorials that even Peppa Pig can understand.txt](Tutorials%20that%20even%20Peppa%20Pig%20can%20understand.txt). The original Chinese layout is preserved in [奶龙也能看懂的食用说明.txt](奶龙也能看懂的食用说明.txt).
 
 The minimum manual layout is:
 
@@ -96,31 +205,29 @@ Merge this block into the Profile's `cordis.patch.yml`; do not overwrite unrelat
 
 Do not copy this repository's `node_modules` into the Profile. Multiple Cordis or DSH module instances can break Scope and Service identity.
 
-## Behavior
+## Behavior at a Glance
 
-| Effective Sandbox Mode | Approval Policy | Escalation targets visible to the model |
-|---|---|---|
-| `danger-full-access` | any | none |
-| any mode | `never` | none |
-| `workspace-write` | approval allowed | `danger-full-access` |
-| `read-only` | approval allowed | `workspace-write`, `danger-full-access` |
+| Scenario | Plugin behavior |
+|---|---|
+| `danger-full-access`, or any mode with `never` | Model sees no `sandbox_permissions` / `justification` |
+| `workspace-write` with approval allowed | Only `danger-full-access` is advertised |
+| `read-only` with approval allowed | `workspace-write` and `danger-full-access` are advertised |
+| Model sends the exact current mode as an escalation request | The redundant pair is removed, then the original tool runs |
+| Downgrade, unknown target, unpaired arguments, genuine escalation | Left untouched for original DSH validation |
+| No viable escalation target | Shell description escalation tail is removed; impossible hints are stripped from denial results |
 
-When no escalation target is viable, the model-visible schemas for `bash`, `pwsh`, `write`, and `edit` omit both `sandbox_permissions` and `justification`. If a model still sends a paired request for the current mode, the wrapper removes that redundant pair before delegating to the original tool.
+## Verify the Fix
 
-Downgrades, unknown targets, unpaired arguments, and genuine escalation requests remain subject to the original DSH validation and approval behavior. The plugin does not grant permissions, bypass approval, or widen the active sandbox.
+After installing or updating the plugin, fully restart DSH and create a new session.
 
-## Model-Visible Effects
+1. Select the previously affected OAI model.
+2. Set Access Mode to All Access.
+3. Ask the model to run `pwsh` and print the current directory.
+4. Ask it to create a temporary file with `write`.
+5. Ask it to update the file with `edit`, then read it back.
+6. Switch workspaces and open existing sessions to confirm normal session restoration.
 
-- Native tools and Code Mode expose the same session-aware schema.
-- All Access sessions no longer advertise an impossible second upgrade to `danger-full-access`.
-- Sandbox denial results do not retain escalation advice when the active policy cannot approve that escalation.
-- The behavior applies to every model using the wrapped tools, not only OAI models.
-
-## Verification Evidence
-
-The test suite uses real DSH `SessionStore`, `ToolRuntime`, `AgentRegistry`, `SandboxPolicyService`, `ApprovalService`, and `SystemPrompt` packages rather than testing only isolated mocks. Its 20 tests cover the policy matrix, exact same-mode normalization, Native schema projection, Code Mode SDK generation, delegate replacement, wrapper cooperation and conflict rejection, Shell/FS/`job_output` feedback filtering, version checks, and plugin unload behavior.
-
-The test suite does not replace model-provider E2E evidence. The manual checklist verifies the assembled Web session lifecycle and the affected OAI All Access workflow.
+The calls should complete without `sandbox_permissions` argument errors or impossible escalation advice. Existing sessions should remain visible, workspace switching should work, and new sessions should be created in the selected workspace. The complete manual acceptance checklist is in [README.zh.md](README.zh.md#人工测试清单).
 
 ## Wrapper Conflicts
 
@@ -138,27 +245,16 @@ import {
 } from 'dsh-sandbox-escalation-fix/wrapper-protocol'
 ```
 
-## Verify the Fix
-
-After installing or updating the plugin, fully restart DSH and create a new session.
-
-1. Select the previously affected OAI model.
-2. Set Access Mode to All Access.
-3. Ask the model to run `pwsh` and print the current directory.
-4. Ask it to create a temporary file with `write`.
-5. Ask it to update the file with `edit`, then read it back.
-6. Switch workspaces and open existing sessions to confirm normal session restoration.
-
-The calls should complete without `sandbox_permissions` argument errors or impossible escalation advice. Existing sessions should remain visible, workspace switching should work, and new sessions should be created in the selected workspace. The complete manual acceptance checklist is in [README.zh.md](README.zh.md#人工测试清单).
-
 ## Troubleshooting
 
-- **The plugin does not load:** Confirm installation and startup use the same `--profile`, then inspect `--dump-config`.
-- **A Git install cannot build:** Add the package to the Profile's `allowBuilds` map and retry the installation.
-- **Startup rejects DSH versions:** Keep the relevant `@deepseek-ai/dsh-*` packages on one supported release candidate.
-- **Agent registration reports a tool conflict:** Remove the incompatible same-name wrapper or update it to implement the wrapper protocol.
-- **Escalation fields remain visible:** Test a new session and check whether a later plugin replaces the same tool names.
-- **Manual installation breaks Scope behavior:** Remove the plugin's nested `node_modules` and verify that `package.json` is directly under the expected package directory.
+| Problem | What to do |
+|---|---|
+| The plugin does not load | Confirm installation and startup use the same `--profile`, then inspect `--dump-config` |
+| A Git install cannot build | Add the package to the Profile's `allowBuilds` map and retry the installation |
+| Startup rejects DSH versions | Keep the relevant `@deepseek-ai/dsh-*` packages on one supported release candidate |
+| Agent registration reports a tool conflict | Remove the incompatible same-name wrapper or update it to implement the wrapper protocol |
+| Escalation fields remain visible | Test a new session and check whether a later plugin replaces the same tool names |
+| Manual installation breaks Scope behavior | Remove the plugin's nested `node_modules` and verify that `package.json` is directly under the expected package directory |
 
 ## Uninstall
 
