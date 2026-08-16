@@ -5,6 +5,26 @@
 > [!IMPORTANT]
 > 这是独立开发的社区插件，不是 DeepSeek 官方发布、维护或背书的插件。它不会修改 DeepSeek Harness 的核心代码。
 
+## 目录
+
+- [这是什么？](#这是什么)
+- [它能解决什么问题？](#它能解决什么问题)
+- [安装前后对比](#安装前后对比)
+- [为什么选择它？](#为什么选择它)
+- [与其他“仅执行期止血”方案的区别](#与其他仅执行期止血方案的区别)
+- [快速使用](#快速使用)
+- [手动覆盖安装（Windows）](#手动覆盖安装windows)
+- [命令行安装](#命令行安装)
+- [验证修复](#验证修复)
+- [人工测试清单](#人工测试清单)
+- [验证证据](#验证证据)
+- [插件行为一览](#插件行为一览)
+- [与其他包装插件协作](#与其他包装插件协作)
+- [卸载](#卸载)
+- [故障排查](#故障排查)
+- [支持范围](#支持范围)
+- [开发验证](#开发验证)
+
 ## 这是什么？
 
 一句话说明：**这个插件让 DeepSeek Harness 只把“当前会话真正能用”的沙箱升级选项展示给模型。**
@@ -25,6 +45,26 @@
 - 模型在 `approval=never` 下仍然被提示“可以升级”，但所有升级都会被拒绝。
 - 工具描述和错误结果里继续出现“升级可用”的提示，诱导模型反复重试。
 - Native Tool Call 和 Code Mode SDK 展示不一致，一边修好了、另一边还在误导模型。
+
+### 问题成因
+
+DSH 工具注册时会公开静态的升级字段，但真正可以请求的升级目标取决于每个 Session 当前的 Sandbox Mode 和 Approval Policy。原始模型可见 Schema 在构造请求前没有根据实时会话状态重新投影，因此即使当前权限已经最高或审批已被禁止，模型仍可能收到无法成功执行的升级参数。工具随后会在执行前拒绝这些请求，模型便可能进入反复修改参数并重试的循环。
+
+## 安装前后对比
+
+未安装插件时，受影响的 All Access Session 可能在实际操作开始前反复失败。模型会在空白 `justification`、同模式 `danger-full-access` 请求，甚至会被 DSH 正确拒绝的降级请求之间循环。
+
+### 安装前：参数校验与升级错误反复出现
+
+![安装前：invalid justification 与非严格变宽的 Sandbox 升级错误反复出现](assets/before-errors-overview.png)
+
+![安装前：Edit 与 Pwsh 在完成实际工作前反复失败](assets/before-repeated-errors.png)
+
+### 安装后：工具可以连续完成工作流
+
+安装插件后，同一模型可以连续执行 Edit、Read、Pwsh、格式化、测试、Lint 和 Type Check，不再进入无效升级循环。
+
+![安装后：Edit、Read 与 Pwsh 连续完成多步骤开发工作流](assets/after-successful-tools.png)
 
 ## 为什么选择它？
 
@@ -109,22 +149,6 @@ Session B = danger-full-access + never   → 看不到升级字段
 ### 它不会给你增加配置负担
 
 零配置，安装到实际使用的 Profile 后即可生效。测试覆盖 20 项，包含真实 DSH 包的集成验证，覆盖 Schema 投影、Code Mode SDK、工具替换、失败提示清理与插件卸载失效等关键路径。
-
-## 安装前后对比
-
-未安装插件时，受影响的 All Access Session 可能在实际操作开始前反复失败。模型会在空白 `justification`、同模式 `danger-full-access` 请求，甚至会被 DSH 正确拒绝的降级请求之间循环。
-
-### 安装前：参数校验与升级错误反复出现
-
-![安装前：invalid justification 与非严格变宽的 Sandbox 升级错误反复出现](assets/before-errors-overview.png)
-
-![安装前：Edit 与 Pwsh 在完成实际工作前反复失败](assets/before-repeated-errors.png)
-
-### 安装后：工具可以连续完成工作流
-
-安装插件后，同一模型可以连续执行 Edit、Read、Pwsh、格式化、测试、Lint 和 Type Check，不再进入无效升级循环。
-
-![安装后：Edit、Read 与 Pwsh 连续完成多步骤开发工作流](assets/after-successful-tools.png)
 
 ## 与其他“仅执行期止血”方案的区别
 

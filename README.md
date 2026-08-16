@@ -5,6 +5,24 @@ English | [中文](README.zh.md)
 > [!IMPORTANT]
 > This is an independent community plugin. It is not published, maintained, or endorsed by DeepSeek, and it does not modify DeepSeek Harness core packages.
 
+## Contents
+
+- [What It Does](#what-it-does)
+- [The Problem It Solves](#the-problem-it-solves)
+- [Before and After](#before-and-after)
+- [Why This Plugin](#why-this-plugin)
+- [This Plugin vs. Execution-Only Normalization](#this-plugin-vs-execution-only-normalization)
+- [Compatibility](#compatibility)
+- [Install From GitHub](#install-from-github)
+- [Manual Windows Installation](#manual-windows-installation)
+- [Behavior at a Glance](#behavior-at-a-glance)
+- [Verify the Fix](#verify-the-fix)
+- [Wrapper Conflicts](#wrapper-conflicts)
+- [Troubleshooting](#troubleshooting)
+- [Uninstall](#uninstall)
+- [Development](#development)
+- [License](#license)
+
 ## What It Does
 
 This plugin makes DeepSeek Harness show the model **only the sandbox escalation options that the current session can actually use**.
@@ -25,6 +43,26 @@ This plugin projects the model-visible tool schema per session, based on the liv
 - With `approval=never`, models are still told escalation is possible when every request will be rejected.
 - Tool descriptions and denial results keep saying “escalation available,” which pushes the model to retry.
 - Native Tool Call and Code Mode SDK can show inconsistent capability surfaces.
+
+### Why It Happens
+
+DSH tools expose static escalation fields when they are registered, while the modes that can actually be requested depend on each session's current Sandbox Mode and Approval Policy. The original model-visible schema is not projected from that live session state before the request is built, so a model can receive escalation parameters that cannot succeed. Tool validation then rejects those requests before execution, which can start a retry loop.
+
+## Before and After
+
+Without the plugin, affected All Access sessions can repeatedly fail before the requested operation runs. The model alternates between an empty `justification`, a same-mode `danger-full-access` request, and even a downgrade request that DSH correctly rejects as not strictly wider.
+
+### Before: Repeated Validation and Escalation Errors
+
+![Before installation: repeated invalid justification and non-widening sandbox escalation errors](assets/before-errors-overview.png)
+
+![Before installation: Edit and Pwsh repeatedly fail before completing the requested work](assets/before-repeated-errors.png)
+
+### After: Tools Complete the Workflow
+
+After installation, the same model can continue through Edit, Read, Pwsh, formatting, tests, lint, and type checking without entering the invalid escalation loop.
+
+![After installation: Edit, Read, and Pwsh complete a multi-step development workflow](assets/after-successful-tools.png)
 
 ## Why This Plugin
 
@@ -107,22 +145,6 @@ The plugin supports DSH `0.1.0-rc.5` and `0.1.0-rc.6`. At startup it verifies th
 ### It won't add configuration burden
 
 Zero configuration. Install it into the Profile you actually use and start DSH as before. The test suite contains 20 tests built on real DSH packages, covering schema projection, Code Mode SDK generation, delegate replacement, failure-hint cleanup, and unload behavior.
-
-## Before and After
-
-Without the plugin, affected All Access sessions can repeatedly fail before the requested operation runs. The model alternates between an empty `justification`, a same-mode `danger-full-access` request, and even a downgrade request that DSH correctly rejects as not strictly wider.
-
-### Before: Repeated Validation and Escalation Errors
-
-![Before installation: repeated invalid justification and non-widening sandbox escalation errors](assets/before-errors-overview.png)
-
-![Before installation: Edit and Pwsh repeatedly fail before completing the requested work](assets/before-repeated-errors.png)
-
-### After: Tools Complete the Workflow
-
-After installation, the same model can continue through Edit, Read, Pwsh, formatting, tests, lint, and type checking without entering the invalid escalation loop.
-
-![After installation: Edit, Read, and Pwsh complete a multi-step development workflow](assets/after-successful-tools.png)
 
 ## This Plugin vs. Execution-Only Normalization
 
