@@ -1,4 +1,4 @@
-# dsh-sandbox-escalation-fix
+# dsh-sandbox-escalation-fix (RC7 is now supported)
 
 English | [中文](README.zh.md)
 
