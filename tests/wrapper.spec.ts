@@ -1,12 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ToolDefinition, ToolRunContext } from '@deepseek-ai/dsh-tools'
-import type { SessionId } from '@deepseek-ai/dsh-session'
 import { createWrapperBinding } from '../src/wrapper.ts'
-
-function agent(): Agent {
-  return { id: 'a' as SessionId } as Agent
-}
 
 function tool(executions: unknown[]): ToolDefinition {
   return {
@@ -28,7 +22,7 @@ describe('wrapper chain', () => {
   it('projects schemas and executes layers in stable priority order', async () => {
     const executions: unknown[] = []
     const order: string[] = []
-    const binding = createWrapperBinding(agent(), tool(executions), {
+    const binding = createWrapperBinding(tool(executions), {
       owner: 'z',
       priority: 20,
       projectDescription: value => `${value}:z`,
@@ -55,7 +49,7 @@ describe('wrapper chain', () => {
   it('updates its delegate and removes contributed layers idempotently', async () => {
     const first: unknown[] = []
     const second: unknown[] = []
-    const binding = createWrapperBinding(agent(), tool(first), {
+    const binding = createWrapperBinding(tool(first), {
       owner: 'owner',
       priority: 10,
     })

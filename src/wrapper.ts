@@ -1,4 +1,3 @@
-import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ToolDefinition, ToolRunContext } from '@deepseek-ai/dsh-tools'
 import { TOOL_WRAPPER_PROTOCOL } from './wrapper-protocol.ts'
 import type { CooperativeToolDefinition, WrapperLayer } from './wrapper-protocol.ts'
@@ -9,7 +8,6 @@ export interface WrapperBinding {
   readonly definition: ToolDefinition
   updateDelegate(delegate: ToolDefinition): void
   contribute(layer: WrapperLayer): () => void
-  markUnhealthy(error: Error): void
   releaseOwnLayer(): void
 }
 
@@ -20,24 +18,13 @@ function sortedLayers(layers: ReadonlyMap<string, WrapperLayer>): WrapperLayer[]
 }
 
 export function createWrapperBinding(
-  agent: Agent,
   initialDelegate: ToolDefinition,
   ownLayer: WrapperLayer,
 ): WrapperBinding {
   let currentDelegate = initialDelegate
-  let unhealthy: Error | undefined
   const layers = new Map<string, WrapperLayer>([[ownLayer.owner, ownLayer]])
   const context = { toolName: initialDelegate.name }
-
-  const delegate = (): ToolDefinition => {
-    if (unhealthy !== undefined) {
-      throw new Error(
-        `dsh-sandbox-escalation-fix: agent "${agent.id}" tool "${initialDelegate.name}" is unavailable: ${unhealthy.message}`,
-        { cause: unhealthy },
-      )
-    }
-    return currentDelegate
-  }
+  const delegate = (): ToolDefinition => currentDelegate
 
   const release = (owner: string): void => {
     layers.delete(owner)
@@ -139,13 +126,9 @@ export function createWrapperBinding(
         throw new Error(`delegate name changed from "${initialDelegate.name}" to "${next.name}"`)
       }
       currentDelegate = next
-      unhealthy = undefined
     },
     contribute(layer): () => void {
       return definition[TOOL_WRAPPER_PROTOCOL]!.contribute(layer)
-    },
-    markUnhealthy(error): void {
-      unhealthy = error
     },
     releaseOwnLayer(): void {
       release(ownLayer.owner)

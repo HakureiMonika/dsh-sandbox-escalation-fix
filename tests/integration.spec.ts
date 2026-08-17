@@ -15,6 +15,7 @@ import ApprovalService, { setApprovalPolicy } from '@deepseek-ai/dsh-user-approv
 import { describe, expect, it } from 'vitest'
 import Plugin from '../src/index.ts'
 import { TOOL_WRAPPER_PROTOCOL } from '../src/wrapper-protocol.ts'
+import { createWrapperBinding } from '../src/wrapper.ts'
 
 class FsDeniedError extends HarnessError {
   constructor() {
@@ -57,12 +58,40 @@ function targetTool(name: string, seen: unknown[]): ToolDefinition {
   }
 }
 
+function parameterProperties(definition: ToolDefinition): Record<string, unknown> {
+  return definition.parameters.properties as Record<string, unknown>
+}
+
+async function scopedAgent(
+  ctx: Context,
+  presetKey: object,
+  id: string,
+): Promise<Agent> {
+  const session = ctx.sessions.create(SessionId(id))
+  const agentKey = { id: session.id } as Agent
+  let agentScope!: ReturnType<typeof createScope>
+  await ctx.plugin(Object.assign((inner: Context) => {
+    agentScope = createScope(inner, agentKey)
+    bindScopeParent(agentKey, presetKey)
+  }, { inject: ['tools'] }))
+  return Object.assign(agentKey, {
+    session,
+    ctx: agentScope.ctx,
+    options: {},
+    inbox: {},
+    status: 'idle' as const,
+  }) as Agent
+}
+
 async function harness(): Promise<{
   ctx: Context
   agent: Agent
   seen: unknown[]
   disposePlugin(): Promise<void>
+  disposeAgent(): void
   replaceDelegate(name: string, definition: ToolDefinition): void
+  removeDelegate(name: string): void
+  createAgent(id: string): Promise<Agent>
 }> {
   const ctx = new Context()
   await ctx.plugin(SessionStore)
@@ -84,30 +113,23 @@ async function harness(): Promise<{
     }
   }, { inject: ['tools'] }))
 
-  const session = ctx.sessions.create(SessionId('agent'))
-  const agentKey = { id: session.id } as Agent
-  let agentScope!: ReturnType<typeof createScope>
-  await ctx.plugin(Object.assign((inner: Context) => {
-    agentScope = createScope(inner, agentKey)
-    bindScopeParent(agentKey, presetKey)
-  }, { inject: ['tools'] }))
-  const agent = Object.assign(agentKey, {
-    session,
-    ctx: agentScope.ctx,
-    options: {},
-    inbox: {},
-    status: 'idle' as const,
-  }) as Agent
-  ctx.agents.register(agent)
+  const agent = await scopedAgent(ctx, presetKey, 'agent')
+  const disposeAgent = ctx.agents.register(agent)
   return {
     ctx,
     agent,
     seen,
     disposePlugin: () => pluginFiber.dispose(),
+    disposeAgent,
     replaceDelegate(name, definition): void {
       targetDisposers.get(name)?.()
       targetDisposers.set(name, presetScope.ctx.tools.register(definition))
     },
+    removeDelegate(name): void {
+      targetDisposers.get(name)?.()
+      targetDisposers.delete(name)
+    },
+    createAgent: id => scopedAgent(ctx, presetKey, id),
   }
 }
 
@@ -198,6 +220,162 @@ describe('installed plugin', () => {
     expect(result.isError).toBe(false)
     expect(seen).toEqual([])
     expect(replacementSeen).toEqual([{ value: 'new' }])
+    await ctx.fiber.dispose()
+  })
+
+  it('mirrors dynamic restrictions and restores projected wrappers', async () => {
+    const { ctx, agent, seen } = await harness()
+    const lift = agent.ctx.tools.restrict({ allow: ['bash'] })
+
+    expect(ctx.tools.schemas(agent).map(schema => schema.name)).toEqual(['bash'])
+    expect(ctx.tools.get('pwsh', agent)).toBeUndefined()
+
+    lift()
+
+    const restored = ctx.tools.schemas(agent).find(schema => schema.name === 'pwsh')!
+    expect((restored.parameters.properties as Record<string, unknown>).sandbox_permissions)
+      .toBeUndefined()
+    const result = await ctx.tools.execute({
+      callId: CallId('restriction-restored'),
+      name: 'pwsh',
+      arguments: { value: 'restored' },
+      agent,
+      signal: new AbortController().signal,
+    })
+    expect(result.isError).toBe(false)
+    expect(seen).toContainEqual({ value: 'restored' })
+    await ctx.fiber.dispose()
+  })
+
+  it('removes a stable missing delegate and restores a later replacement', async () => {
+    const { ctx, agent, removeDelegate, replaceDelegate } = await harness()
+    removeDelegate('pwsh')
+
+    expect(ctx.tools.get('pwsh', agent)).toBeUndefined()
+
+    const replacementSeen: unknown[] = []
+    replaceDelegate('pwsh', targetTool('pwsh', replacementSeen))
+
+    const result = await ctx.tools.execute({
+      callId: CallId('stable-restored'),
+      name: 'pwsh',
+      arguments: { value: 'new' },
+      agent,
+      signal: new AbortController().signal,
+    })
+    expect(result.isError).toBe(false)
+    expect(replacementSeen).toEqual([{ value: 'new' }])
+    await ctx.fiber.dispose()
+  })
+
+  it('discovers targets that were restricted during initial registration', async () => {
+    const ctx = new Context()
+    await ctx.plugin(SessionStore)
+    await ctx.plugin(SystemPrompt, {})
+    await ctx.plugin(ToolRuntime)
+    await ctx.plugin(AgentRegistry)
+    await ctx.plugin(SandboxPolicyService, { mode: 'danger-full-access' })
+    await ctx.plugin(ApprovalService, { policy: 'never' })
+    await ctx.plugin(Plugin)
+    const presetKey = { preset: 'initially-restricted' }
+    await ctx.plugin(Object.assign((inner: Context) => {
+      const presetScope = createScope(inner, presetKey)
+      for (const name of ['bash', 'pwsh', 'write', 'edit']) {
+        presetScope.ctx.tools.register(targetTool(name, []))
+      }
+    }, { inject: ['tools'] }))
+    const agent = await scopedAgent(ctx, presetKey, 'initially-restricted')
+    const lift = agent.ctx.tools.restrict({ allow: ['bash'] })
+
+    ctx.agents.register(agent)
+    expect(ctx.tools.get('pwsh', agent)).toBeUndefined()
+
+    lift()
+    const restored = ctx.tools.get('pwsh', agent) as ToolDefinition & {
+      [TOOL_WRAPPER_PROTOCOL]?: unknown
+    }
+    expect(restored[TOOL_WRAPPER_PROTOCOL]).toBeDefined()
+    await ctx.fiber.dispose()
+  })
+
+  it('keeps dynamic restrictions isolated between agents', async () => {
+    const { ctx, agent: first, createAgent } = await harness()
+    const second = await createAgent('second-agent')
+    ctx.agents.register(second)
+
+    const lift = first.ctx.tools.restrict({ allow: ['bash'] })
+
+    expect(ctx.tools.get('pwsh', first)).toBeUndefined()
+    expect(ctx.tools.get('pwsh', second)).toBeDefined()
+
+    lift()
+    expect(ctx.tools.get('pwsh', first)).toBeDefined()
+    expect(ctx.tools.get('pwsh', second)).toBeDefined()
+    await ctx.fiber.dispose()
+  })
+
+  it('switches between owned and cooperative delegates without leaking its layer', async () => {
+    const { ctx, agent, replaceDelegate } = await harness()
+    const cooperativeSeen: unknown[] = []
+    const cooperative = createWrapperBinding(
+      targetTool('pwsh', cooperativeSeen),
+      { owner: 'external-wrapper', priority: 50 },
+    )
+
+    replaceDelegate('pwsh', cooperative.definition)
+
+    expect(ctx.tools.get('pwsh', agent)).toBe(cooperative.definition)
+    expect(parameterProperties(cooperative.definition).sandbox_permissions)
+      .toBeUndefined()
+
+    const replacementSeen: unknown[] = []
+    replaceDelegate('pwsh', targetTool('pwsh', replacementSeen))
+
+    expect(parameterProperties(cooperative.definition).sandbox_permissions)
+      .toBeDefined()
+    const restored = ctx.tools.get('pwsh', agent) as ToolDefinition & {
+      [TOOL_WRAPPER_PROTOCOL]?: unknown
+    }
+    expect(restored).not.toBe(cooperative.definition)
+    expect(restored[TOOL_WRAPPER_PROTOCOL]).toBeDefined()
+    await ctx.fiber.dispose()
+  })
+
+  it('isolates a runtime-incompatible delegate and recovers after replacement', async () => {
+    const { ctx, agent, replaceDelegate } = await harness()
+    const incompatible = {
+      ...targetTool('pwsh', []),
+      parameters: { type: 'array', items: { type: 'string' } },
+    }
+
+    replaceDelegate('pwsh', incompatible)
+
+    expect(ctx.tools.get('pwsh', agent)).toBe(incompatible)
+    const write = ctx.tools.get('write', agent) as ToolDefinition & {
+      [TOOL_WRAPPER_PROTOCOL]?: unknown
+    }
+    expect(write[TOOL_WRAPPER_PROTOCOL]).toBeDefined()
+
+    replaceDelegate('pwsh', targetTool('pwsh', []))
+
+    const restored = ctx.tools.get('pwsh', agent) as ToolDefinition & {
+      [TOOL_WRAPPER_PROTOCOL]?: unknown
+    }
+    expect(restored[TOOL_WRAPPER_PROTOCOL]).toBeDefined()
+    await ctx.fiber.dispose()
+  })
+
+  it('removes exact-scope wrappers when the agent is disposed', async () => {
+    const { ctx, agent, disposeAgent } = await harness()
+
+    disposeAgent()
+
+    expect(ctx.agents.get(agent.id)).toBeUndefined()
+    const visible = ctx.tools.get('pwsh', agent) as ToolDefinition & {
+      [TOOL_WRAPPER_PROTOCOL]?: unknown
+    }
+    expect(visible[TOOL_WRAPPER_PROTOCOL]).toBeUndefined()
+    expect(parameterProperties(visible).sandbox_permissions).toBeDefined()
     await ctx.fiber.dispose()
   })
 

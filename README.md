@@ -23,6 +23,8 @@ Error: sandbox escalation to "workspace-write" is not strictly wider than this c
 - [Why This Plugin](#why-this-plugin)
 - [This Plugin vs. Execution-Only Normalization](#this-plugin-vs-execution-only-normalization)
 - [Compatibility](#compatibility)
+- [Quick Start](#quick-start)
+- [Upgrade](#upgrade)
 - [Install From GitHub](#install-from-github)
 - [Manual Windows Installation](#manual-windows-installation)
 - [Behavior at a Glance](#behavior-at-a-glance)
@@ -146,7 +148,7 @@ Each session is independent. If a session switches permission state mid-flight, 
 
 ### It won't leave stale wrappers behind
 
-The plugin listens to Agent creation, disposal, Preset changes, and tool changes. New tools are wrapped automatically, replaced tools re-resolve their parent delegate, and disposed Agents or unloaded plugins restore the original definitions.
+The plugin listens to Agent creation, disposal, Preset changes, restrictions, and tool changes. When a dynamic Preset calls `agent.ctx.tools.restrict()`, the corresponding Exact Scope wrappers disappear synchronously with the restricted parent tools. Lifting the restriction restores the projected wrappers; tools absent during Agent creation are wrapped when they later become visible. Each Agent is coordinated independently, and disposed Agents or unloaded plugins restore the original definitions.
 
 ### It won't lock you to a single DSH release
 
@@ -154,7 +156,7 @@ The plugin supports DSH `0.1.0-rc.5` and `0.1.0-rc.6`. At startup it verifies th
 
 ### It won't add configuration burden
 
-Zero configuration. Install it into the Profile you actually use and start DSH as before. The test suite contains 20 tests built on real DSH packages, covering schema projection, Code Mode SDK generation, delegate replacement, failure-hint cleanup, and unload behavior.
+Zero configuration. Install it into the Profile you actually use and start DSH as before. The test suite contains 27 tests built on real DSH packages, covering schema projection, Code Mode SDK generation, dynamic restrictions, multi-Agent isolation, delegate and wrapper-protocol replacement, failure-hint cleanup, and unload behavior.
 
 ## This Plugin vs. Execution-Only Normalization
 
@@ -174,7 +176,41 @@ Zero configuration. Install it into the Profile you actually use and start DSH a
 - `@deepseek-ai/dsh-*` `0.1.0-rc.5` or `0.1.0-rc.6`
 - `@deepseek-ai/cordis` `4.0.1`
 
-The plugin checks the installed DSH package versions at startup. Mixed rc.5/rc.6 installations, unknown DSH versions, partial escalation fields, and incompatible tool output definitions fail explicitly instead of silently changing tool behavior. A target tool that omits both escalation fields is accepted as already safe.
+The plugin checks the installed DSH package versions at startup. Mixed rc.5/rc.6 installations and unknown DSH versions fail explicitly. An initially visible target with partial escalation fields or an incompatible output definition rejects that Agent's registration; a target that omits both escalation fields is accepted as already safe. During runtime, a Preset restriction or stable provider removal makes the wrapper dormant, while an incompatible replacement is isolated to that Agent and target tool and reported without terminating the Host process. A later compatible definition is wrapped automatically.
+
+## Quick Start
+
+The plugin is a zero-configuration fix. Install it into the Profile that runs the affected sessions, then start DSH normally:
+
+```sh
+dsh --profile <profile>
+```
+
+You do not need to change the model configuration, Sandbox Mode, Approval Policy, or Agent Preset. The plugin projects the model-visible parameters from each Session's current permission state.
+
+## Upgrade
+
+Close DSH before upgrading. The plugin package name, Bundle ID, and Profile patch row are unchanged, so an existing installation does not need another `cordis.patch.yml` entry.
+
+### GitHub Commit Installation
+
+Run the same installation command with the new reviewed commit SHA:
+
+```sh
+dsh plugin --profile <profile> add github:<owner>/dsh-sandbox-escalation-fix#<new-commit-sha>
+```
+
+This updates the Profile dependency and rebuilds the package. Keep the existing `allowBuilds` entry when pnpm requires it, inspect `--dump-config`, then restart DSH.
+
+### Manual Web Profile Installation
+
+Use the repository or packaged source that contains the new built `lib` directory. Open Windows PowerShell in that plugin directory and run:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\deploy-web-profile.ps1"
+```
+
+The script uses `$DSH_HOME` when set, otherwise `%USERPROFILE%\.dsh`. It replaces only the eight published `lib` artifacts, compares every SHA-256 hash, and prints `Deployment verified.` only when the installed Web Profile exactly matches the new build. It does not modify the Profile patch or copy `node_modules`. Restart DSH after verification.
 
 ## Install From GitHub
 
@@ -237,6 +273,8 @@ Merge this block into the Profile's `cordis.patch.yml`; do not overwrite unrelat
 
 Do not copy this repository's `node_modules` into the Profile. Multiple Cordis or DSH module instances can break Scope and Service identity.
 
+To update an existing installation, follow [Upgrade](#upgrade); do not repeat the Profile patch step.
+
 ## Behavior at a Glance
 
 | Scenario | Plugin behavior |
@@ -247,10 +285,21 @@ Do not copy this repository's `node_modules` into the Profile. Multiple Cordis o
 | Model sends the exact current mode as an escalation request | The redundant pair is removed, then the original tool runs |
 | Downgrade, unknown target, unpaired arguments, genuine escalation | Left untouched for original DSH validation |
 | No viable escalation target | Shell description escalation tail is removed; impossible hints are stripped from denial results |
+| A dynamic Preset restricts a target tool | Its Exact Scope wrapper disappears in the same synchronous change |
+| The restriction is lifted or the provider returns | The projected wrapper is restored automatically |
+| A runtime replacement is incompatible | Only that Agent and target remain unwrapped until a compatible definition appears |
 
 ## Verify the Fix
 
 After installing or updating the plugin, fully restart DSH and create a new session.
+
+A successful Web startup proves that the Profile composes and the plugin loads without a process-level failure. For a source checkout, this command starts the Web profile directly:
+
+```powershell
+node --import tsx/esm apps/cli/src/bin.ts web
+```
+
+Run it with a supported Node.js version available on PATH. Wait for `dsh web: http://127.0.0.1:3080`, then perform the behavior checks below. Startup alone does not prove dynamic restriction behavior.
 
 1. Select the previously affected OAI model.
 2. Set Access Mode to All Access.
@@ -258,6 +307,7 @@ After installing or updating the plugin, fully restart DSH and create a new sess
 4. Ask it to create a temporary file with `write`.
 5. Ask it to update the file with `edit`, then read it back.
 6. Switch workspaces and open existing sessions to confirm normal session restoration.
+7. If the Preset uses `agent.ctx.tools.restrict()`, enter its restricted state and confirm hidden tools disappear; lift the restriction and confirm they return without recreating the Agent.
 
 The calls should complete without `sandbox_permissions` argument errors or impossible escalation advice. Existing sessions should remain visible, workspace switching should work, and new sessions should be created in the selected workspace. The complete manual acceptance checklist is in [README.zh.md](README.zh.md#人工测试清单).
 
@@ -285,6 +335,8 @@ import {
 | A Git install cannot build | Add the package to the Profile's `allowBuilds` map and retry the installation |
 | Startup rejects DSH versions | Keep the relevant `@deepseek-ai/dsh-*` packages on one supported release candidate |
 | Agent registration reports a tool conflict | Remove the incompatible same-name wrapper or update it to implement the wrapper protocol |
+| A dynamic Preset hides tools | This is expected; the plugin mirrors `tools.restrict()` and restores wrappers when the restriction is lifted |
+| A runtime reconciliation warning appears | Check the named target's replacement definition; other tools and Agents remain active while the plugin waits for a compatible definition |
 | Escalation fields remain visible | Test a new session and check whether a later plugin replaces the same tool names |
 | Manual installation breaks Scope behavior | Remove the plugin's nested `node_modules` and verify that `package.json` is directly under the expected package directory |
 

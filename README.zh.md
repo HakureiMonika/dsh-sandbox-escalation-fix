@@ -23,6 +23,7 @@ Error: sandbox escalation to "workspace-write" is not strictly wider than this c
 - [为什么选择它？](#为什么选择它)
 - [与其他“仅执行期止血”方案的区别](#与其他仅执行期止血方案的区别)
 - [快速使用](#快速使用)
+- [升级插件](#升级插件)
 - [手动覆盖安装（Windows）](#手动覆盖安装windows)
 - [命令行安装](#命令行安装)
 - [验证修复](#验证修复)
@@ -70,15 +71,11 @@ DSH 工具注册时会公开静态的升级字段，但真正可以请求的升�
 
 ![安装前：Edit 与 Pwsh 在完成实际工作前反复失败](assets/before-repeated-errors.png)
 
-<br>红彤彤的真喜庆。
-
 ### 安装后：工具可以连续完成工作流
 
 安装插件后，同一模型可以连续执行 Edit、Read、Pwsh、格式化、测试、Lint 和 Type Check，不再进入无效升级循环。
 
 ![安装后：Edit、Read 与 Pwsh 连续完成多步骤开发工作流](assets/after-successful-tools.png)
-
-<br>效果非常显著。
 
 ## 为什么选择它？
 
@@ -154,7 +151,7 @@ Session B = danger-full-access + never   → 看不到升级字段
 
 ### 它不会在 Agent 销毁或工具替换后留下残留包装
 
-插件完整监听 Agent 创建、销毁、Preset 切换和工具变更事件。新工具出现时自动接入，工具替换后自动重新解析父级定义，Agent 销毁或插件卸载后自动恢复原始定义。
+插件完整监听 Agent 创建、销毁、Preset 切换、动态限制和工具变更事件。动态 Preset 调用 `agent.ctx.tools.restrict()` 时，对应的 Agent Exact Scope 包装器会与被限制的父工具同步退出；限制解除后自动恢复投影包装。Agent 创建时不可见的目标工具以后重新出现，也会自动接入。每个 Agent 独立协调，Agent 销毁或插件卸载后恢复原始定义。
 
 ### 它不会只支持单一 DSH 版本
 
@@ -162,7 +159,7 @@ Session B = danger-full-access + never   → 看不到升级字段
 
 ### 它不会给你增加配置负担
 
-零配置，安装到实际使用的 Profile 后即可生效。测试覆盖 20 项，包含真实 DSH 包的集成验证，覆盖 Schema 投影、Code Mode SDK、工具替换、失败提示清理与插件卸载失效等关键路径。
+零配置，安装到实际使用的 Profile 后即可生效。测试覆盖 27 项，包含真实 DSH 包的集成验证，覆盖 Schema 投影、Code Mode SDK、动态限制、多 Agent 隔离、Delegate 与协作包装器替换、失败提示清理和插件卸载等关键路径。
 
 ## 与其他“仅执行期止血”方案的区别
 
@@ -185,6 +182,36 @@ dsh --profile <profile>
 ```
 
 无需修改模型配置、Sandbox Mode、Approval Policy 或 Agent Preset。插件会按每个 Session 的当前权限状态动态决定模型可见参数。
+
+## 升级插件
+
+升级前必须关闭 DSH。插件包名、Bundle ID 和 Profile Patch 配置行均未改变，已经安装旧版的用户不需要再次修改 `cordis.patch.yml`。
+
+### 通过 GitHub Commit 安装的用户
+
+将原安装命令中的 Commit SHA 换成新的、已经审核过的 SHA，再执行同一条命令：
+
+```sh
+dsh plugin --profile <profile> add github:<owner>/dsh-sandbox-escalation-fix#<new-commit-sha>
+```
+
+该命令会更新 Profile 依赖并重新构建插件。如果 pnpm 要求 `allowBuilds`，继续保留原有配置即可。安装完成后检查 `--dump-config`，然后重新启动 DSH。
+
+### 手动安装到 Web Profile 的用户
+
+准备包含新版 `lib` 的仓库或发布包，在插件目录中打开 Windows PowerShell，然后执行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\deploy-web-profile.ps1"
+```
+
+脚本优先使用 `DSH_HOME`；未设置时使用 `%USERPROFILE%\.dsh`。它只覆盖 8 个发布用 `lib` 文件并逐一比较 SHA-256；只有部署目录与新版构建完全一致时，最后一行才会显示：
+
+```text
+Deployment verified.
+```
+
+脚本不会修改 Profile Patch，也不会复制 `node_modules`。验证成功后重新启动 DSH。
 
 ## 手动覆盖安装（Windows）
 
@@ -305,6 +332,8 @@ lib\
 ```text
 <Profile目录>\node_modules\dsh-sandbox-escalation-fix\dsh-sandbox-escalation-fix\package.json
 ```
+
+更新已经安装的版本时，请直接按照[升级插件](#升级插件)操作，不要重复添加 Profile Patch。
 
 ### 4. 修改 Profile Patch
 
@@ -428,11 +457,24 @@ dsh --profile <profile> --dump-config
 
 ## 验证修复
 
+Web 正常启动只能证明 Profile 组合成功、插件加载时没有导致进程退出；动态限制行为仍需按本节后续步骤验证。使用 DSH 源码仓库时，可在仓库根目录运行：
+
+```powershell
+node --import tsx/esm apps/cli/src/bin.ts web
+```
+
+请先确保受支持的 Node.js 已加入 PATH。看到以下输出后再继续测试：
+
+```text
+dsh web: http://127.0.0.1:3080
+```
+
 1. 使用安装插件的 Profile 启动 DSH。
 2. 选择原先在 All Access 下受影响的 OAI 系列模型。
 3. 将权限设置为 All Access，对应 `danger-full-access` 与 Approval Policy `never`。
 4. 新建 Session，让 Agent Scope 在插件已加载的状态下创建。
 5. 要求模型执行一条简单 Shell 命令或写入工作区文件。
+6. 如果 Preset 使用 `agent.ctx.tools.restrict()`，进入限制状态并确认对应工具消失；解除限制后确认工具无需重建 Agent 即可恢复。
 
 修复生效时：
 
@@ -478,6 +520,9 @@ dsh --profile <profile> --dump-config
 ### Preset 与 Code Mode
 
 - [ ] 在可用的两个 Agent Preset 之间切换后，新建 Session，pwsh 与文件工具仍正常。
+- [ ] 使用会调用 `agent.ctx.tools.restrict()` 的动态 Preset；进入限制状态后，被限制工具立即从 Native Schema 和 Code Mode SDK 消失。
+- [ ] 解除动态限制后，不重建 Agent 也能恢复相应工具，且恢复后的 Schema 仍按当前权限隐藏无效升级字段。
+- [ ] 两个 Agent 使用不同动态限制时，一个 Agent 隐藏工具不会影响另一个 Agent。
 - [ ] 如果使用 Code Mode，程序内调用 pwsh、读取和写入工具均正常，错误消息不包含无法执行的升级建议。
 - [ ] 切回 Native Tool 模式后，工具行为保持一致。
 
@@ -492,13 +537,17 @@ dsh --profile <profile> --dump-config
 
 ## 验证证据
 
-自动测试直接使用真实 DSH `SessionStore`、`ToolRuntime`、`AgentRegistry`、`SandboxPolicyService`、`ApprovalService` 和 `SystemPrompt` 包，而不是只测试隔离 Mock。20 项测试覆盖：
+自动测试直接使用真实 DSH `SessionStore`、`ToolRuntime`、`AgentRegistry`、`SandboxPolicyService`、`ApprovalService` 和 `SystemPrompt` 包，而不是只测试隔离 Mock。27 项测试覆盖：
 
 - 权限矩阵；
 - 精确同模式正规化；
 - Native Schema 投影；
 - Code Mode SDK 生成；
+- 动态 Preset 限制、解除和初始受限后自动发现；
+- 多 Agent 限制隔离；
 - Delegate 替换；
+- 普通包装器与协作协议包装器动态切换；
+- 运行期不兼容定义的单工具隔离与恢复；
 - 包装协作与冲突拒绝；
 - Shell / FS / `job_output` 提示过滤；
 - 版本检查；
@@ -516,6 +565,9 @@ dsh --profile <profile> --dump-config
 | 模型发送与当前模式完全相同的冗余升级参数 | 包装器删除这一对参数后委托原工具 |
 | 降级、未知目标、缺少配对参数和真实升级请求 | 仍交给原工具严格验证 |
 | 无合法升级目标 | 删除 Shell 描述尾部的升级说明，并清理与 Sandbox Denial Marker 同时出现的无效提示 |
+| 动态 Preset 限制目标工具 | 对应 Exact Scope 包装器在同一次同步变更中退出 |
+| 限制解除或 Provider 恢复 | 自动重新建立投影包装，无需重建 Agent |
+| 运行期替换为不兼容定义 | 只让对应 Agent 的对应工具暂时不包装，记录诊断并等待兼容定义恢复 |
 
 ## 与其他包装插件协作
 
@@ -561,6 +613,8 @@ dsh --profile <profile> --dump-config
 | Git 安装构建失败 | 确认 Profile 的 `pnpm-workspace.yaml` 已允许构建 `dsh-sandbox-escalation-fix`，然后重新安装 |
 | 启动时报版本错误 | 不要混装 rc.5 与 rc.6 包；让 Profile 中关键 `@deepseek-ai/dsh-*` 包保持同一版本 |
 | Agent 注册时报同名工具冲突 | 另一个插件已在 Agent Exact Scope 注册 `bash`、`pwsh`、`write` 或 `edit`，且未实现协作协议；只能卸载其中一个 |
+| 动态 Preset 隐藏了部分工具 | 这是正常行为；插件会镜像 `tools.restrict()`，限制解除后自动恢复包装 |
+| 日志出现动态协调警告 | 检查警告中目标工具的替换定义；其他工具和 Agent 会继续工作，兼容定义出现后自动恢复 |
 | 升级字段仍然出现 | 确认查看的是安装后新建 Session 的 Schema，并确认没有后加载的插件替换同名工具 |
 
 ## 支持范围
@@ -569,9 +623,9 @@ dsh --profile <profile> --dump-config
 - `@deepseek-ai/dsh-*` `0.1.0-rc.5`、`0.1.0-rc.6`
 - `@deepseek-ai/cordis` `4.0.1`
 
-插件针对这些版本的公开 Scope、ToolRuntime、Sandbox Policy 与 Approval Service 契约构建。目标工具定义或同 Scope 包装协议不兼容时会严格失败。
+插件针对这些版本的公开 Scope、ToolRuntime、Sandbox Policy 与 Approval Service 契约构建。Agent 初次创建时，已可见的目标工具定义或同 Scope 包装协议不兼容会严格拒绝该 Agent 注册。
 
-启动时会读取关键 `@deepseek-ai/dsh-*` 包的实际版本；rc.5/rc.6 混装或未知版本会拒绝启动。目标工具同时省略两个升级字段时视为已经安全，只有字段结构残缺或输出契约不兼容时才严格失败。
+启动时会读取关键 `@deepseek-ai/dsh-*` 包的实际版本；rc.5/rc.6 混装或未知版本会拒绝启动。目标工具同时省略两个升级字段时视为已经安全。运行期的 Preset 限制或 Provider 稳定删除会让包装器进入休眠；运行期替换为字段残缺或输出定义不兼容的工具时，只隔离对应 Agent 的对应工具并记录警告，不会终止 Host 进程，后续兼容定义出现时自动恢复。
 
 ## 开发验证
 

@@ -35,6 +35,7 @@
     "lib",
     "assets",
     "cordis.patch.yml",
+    "deploy-web-profile.ps1",
     "README.md",
     "README.zh.md",
     "Tutorials that even Peppa Pig can understand",
