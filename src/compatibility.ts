@@ -1,7 +1,7 @@
 import { createRequire } from 'node:module'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 
-export const SUPPORTED_DSH_VERSIONS = ['0.1.0-rc.5', '0.1.0-rc.6'] as const
+export const SUPPORTED_DSH_VERSIONS = ['0.1.0-rc.5', '0.1.0-rc.6', '0.1.0-rc.7'] as const
 
 const DSH_PACKAGES = [
   '@deepseek-ai/dsh-agent',

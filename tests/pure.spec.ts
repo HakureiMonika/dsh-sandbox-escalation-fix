@@ -82,9 +82,11 @@ describe('execution compatibility', () => {
   it('accepts one supported DSH release and rejects mixed or unknown versions', () => {
     expect(() => validateDshVersionSet({ tools: '0.1.0-rc.6', sandbox: '0.1.0-rc.6' }))
       .not.toThrow()
+    expect(() => validateDshVersionSet({ tools: '0.1.0-rc.7', sandbox: '0.1.0-rc.7' }))
+      .not.toThrow()
     expect(() => validateDshVersionSet({ tools: '0.1.0-rc.5', sandbox: '0.1.0-rc.6' }))
       .toThrow(/mixed DSH package versions/)
-    expect(() => validateDshVersionSet({ tools: '0.1.0-rc.7' }))
+    expect(() => validateDshVersionSet({ tools: '0.1.0-rc.8' }))
       .toThrow(/unsupported DSH version/)
   })
 })

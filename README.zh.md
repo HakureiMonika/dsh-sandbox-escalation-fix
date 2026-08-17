@@ -155,7 +155,7 @@ Session B = danger-full-access + never   → 看不到升级字段
 
 ### 它不会只支持单一 DSH 版本
 
-插件同时支持 DSH `0.1.0-rc.5` 和 `0.1.0-rc.6`，并在加载时校验 DSH 各包版本是否一致且受支持。遇到不兼容的工具定义会主动拒绝安装，而不是在运行中产生难以排查的诡异行为。
+插件同时支持 DSH `0.1.0-rc.5`、`0.1.0-rc.6` 和 `0.1.0-rc.7`，并在加载时校验 DSH 各包版本是否一致且受支持。遇到不兼容的工具定义会主动拒绝安装，而不是在运行中产生难以排查的诡异行为。
 
 ### 它不会给你增加配置负担
 
@@ -611,7 +611,7 @@ dsh --profile <profile> --dump-config
 | 复制了整个开发文件夹 | 可以保留，但必须删除目标插件目录内部的 `node_modules`，并确认没有多套一层同名目录 |
 | YAML 启动报错 | 检查 `- insert:` 是否顶格、是否误加了方括号或引号，以及缩进是否只使用空格 |
 | Git 安装构建失败 | 确认 Profile 的 `pnpm-workspace.yaml` 已允许构建 `dsh-sandbox-escalation-fix`，然后重新安装 |
-| 启动时报版本错误 | 不要混装 rc.5 与 rc.6 包；让 Profile 中关键 `@deepseek-ai/dsh-*` 包保持同一版本 |
+| 启动时报版本错误 | 不要混装 rc.5、rc.6 与 rc.7 包；让 Profile 中关键 `@deepseek-ai/dsh-*` 包保持同一版本 |
 | Agent 注册时报同名工具冲突 | 另一个插件已在 Agent Exact Scope 注册 `bash`、`pwsh`、`write` 或 `edit`，且未实现协作协议；只能卸载其中一个 |
 | 动态 Preset 隐藏了部分工具 | 这是正常行为；插件会镜像 `tools.restrict()`，限制解除后自动恢复包装 |
 | 日志出现动态协调警告 | 检查警告中目标工具的替换定义；其他工具和 Agent 会继续工作，兼容定义出现后自动恢复 |
@@ -620,12 +620,12 @@ dsh --profile <profile> --dump-config
 ## 支持范围
 
 - Node.js `^22.19.0` 或 `>=24.0.0`
-- `@deepseek-ai/dsh-*` `0.1.0-rc.5`、`0.1.0-rc.6`
+- `@deepseek-ai/dsh-*` `0.1.0-rc.5`、`0.1.0-rc.6`、`0.1.0-rc.7`
 - `@deepseek-ai/cordis` `4.0.1`
 
 插件针对这些版本的公开 Scope、ToolRuntime、Sandbox Policy 与 Approval Service 契约构建。Agent 初次创建时，已可见的目标工具定义或同 Scope 包装协议不兼容会严格拒绝该 Agent 注册。
 
-启动时会读取关键 `@deepseek-ai/dsh-*` 包的实际版本；rc.5/rc.6 混装或未知版本会拒绝启动。目标工具同时省略两个升级字段时视为已经安全。运行期的 Preset 限制或 Provider 稳定删除会让包装器进入休眠；运行期替换为字段残缺或输出定义不兼容的工具时，只隔离对应 Agent 的对应工具并记录警告，不会终止 Host 进程，后续兼容定义出现时自动恢复。
+启动时会读取关键 `@deepseek-ai/dsh-*` 包的实际版本；rc.5/rc.6/rc.7 混装或未知版本会拒绝启动。目标工具同时省略两个升级字段时视为已经安全。运行期的 Preset 限制或 Provider 稳定删除会让包装器进入休眠；运行期替换为字段残缺或输出定义不兼容的工具时，只隔离对应 Agent 的对应工具并记录警告，不会终止 Host 进程，后续兼容定义出现时自动恢复。
 
 ## 开发验证
 
