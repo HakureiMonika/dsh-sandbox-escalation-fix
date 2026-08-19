@@ -65,4 +65,20 @@ describe('wrapper chain', () => {
     releaseOther()
     releaseOther()
   })
+
+  it('forwards a timeout budget added by a replacement delegate', () => {
+    const binding = createWrapperBinding(tool([]), {
+      owner: 'owner',
+      priority: 10,
+    })
+    const replacement: ToolDefinition = {
+      ...tool([]),
+      // 覆盖首次委托未声明预算、替换后的委托新增预算这一回归场景。
+      timeoutMs: 30_000,
+    }
+
+    binding.updateDelegate(replacement)
+
+    expect(binding.definition.timeoutMs).toBe(30_000)
+  })
 })

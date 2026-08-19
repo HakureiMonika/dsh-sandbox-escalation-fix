@@ -87,12 +87,12 @@ export function createWrapperBinding(
     },
   }
 
-  if (initialDelegate.timeoutMs !== undefined) {
-    Object.defineProperty(definition, 'timeoutMs', {
-      enumerable: true,
-      get: () => delegate().timeoutMs,
-    })
-  }
+  // timeoutMs 是 DSH timeout policy 的内部执行预算。父工具可在运行期替换，
+  // 因此必须始终从当前委托读取，避免新工具后来声明超时预算时被包装器遮蔽。
+  Object.defineProperty(definition, 'timeoutMs', {
+    enumerable: true,
+    get: () => delegate().timeoutMs,
+  })
 
   if (initialDelegate.finalizeContent !== undefined) {
     definition.finalizeContent = (exec, result) => {

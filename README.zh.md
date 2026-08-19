@@ -159,7 +159,7 @@ Session B = danger-full-access + never   → 看不到升级字段
 
 ### 它不会给你增加配置负担
 
-零配置，安装到实际使用的 Profile 后即可生效。测试覆盖 27 项，包含真实 DSH 包的集成验证，覆盖 Schema 投影、Code Mode SDK、动态限制、多 Agent 隔离、Delegate 与协作包装器替换、失败提示清理和插件卸载等关键路径。
+零配置，安装到实际使用的 Profile 后即可生效。测试覆盖 28 项，包含真实 DSH 包的集成验证，覆盖 Schema 投影、Code Mode SDK、动态限制、多 Agent 隔离、Delegate 与协作包装器替换、内部超时预算透传、失败提示清理和插件卸载等关键路径。
 
 ## 与其他“仅执行期止血”方案的区别
 
