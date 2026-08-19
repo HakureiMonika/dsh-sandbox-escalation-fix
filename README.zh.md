@@ -23,6 +23,7 @@ Error: sandbox escalation to "workspace-write" is not strictly wider than this c
 - [为什么选择它？](#为什么选择它)
 - [与其他“仅执行期止血”方案的区别](#与其他仅执行期止血方案的区别)
 - [快速使用](#快速使用)
+- [Release 一键安装与卸载](#release-一键安装与卸载)
 - [升级插件](#升级插件)
 - [手动覆盖安装（Windows）](#手动覆盖安装windows)
 - [命令行安装](#命令行安装)
@@ -182,6 +183,77 @@ dsh --profile <profile>
 ```
 
 无需修改模型配置、Sandbox Mode、Approval Policy 或 Agent Preset。插件会按每个 Session 的当前权限状态动态决定模型可见参数。
+
+## Release 一键安装与卸载
+
+`0.1.1` Release 包通过 DSH CLI 管理插件，不需要手动编辑 Profile Patch。Release 目录包含以下三个文件：
+
+```text
+dsh-sandbox-escalation-fix-0.1.1.tgz
+install-release.ps1
+uninstall-release.ps1
+RELEASE-USAGE.zh.md
+```
+
+安装或卸载前先完全关闭 DSH。双击脚本前，请确认系统已将 `dsh` 命令加入 PATH，且当前 DSH 使用的是 rc5、rc6 或 rc7。
+
+### 安装到默认 Web Profile
+
+在 Release 目录打开 PowerShell，执行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\install-release.ps1"
+```
+
+脚本会定位同目录中唯一的 `.tgz` 文件，然后执行：
+
+```powershell
+dsh plugin --profile web add <tgz-absolute-path>
+```
+
+DSH CLI 会将插件安装到 `web` Profile，并在 pnpm 成功后自动把插件的 `cordis.patch.yml` 加入 Profile Bundle 层。安装完成后重启 DSH。
+
+### 安装到其他 Profile
+
+例如安装到 `headless`：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\install-release.ps1" -Profile headless
+```
+
+### 从默认 Web Profile 卸载
+
+在同一 Release 目录执行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\uninstall-release.ps1"
+```
+
+脚本会执行：
+
+```powershell
+dsh plugin --profile web remove dsh-sandbox-escalation-fix
+```
+
+DSH CLI 会移除 Profile 依赖，并同步移除对应 Bundle 层；完成后重启 DSH。
+
+### 从其他 Profile 卸载
+
+例如从 `headless` 卸载：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\uninstall-release.ps1" -Profile headless
+```
+
+### 发布者构建 Release 目录
+
+在源码根目录执行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
+```
+
+该脚本会先构建 `lib`，再执行 `npm pack` 生成 `.tgz`，最后在 `release` 目录生成 `dsh-sandbox-escalation-fix-release.zip`。ZIP 内含 tarball、两个一键脚本和简明中文使用说明；上传 GitHub Release 时只需上传该 ZIP。
 
 ## 升级插件
 

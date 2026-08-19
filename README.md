@@ -24,6 +24,7 @@ Error: sandbox escalation to "workspace-write" is not strictly wider than this c
 - [This Plugin vs. Execution-Only Normalization](#this-plugin-vs-execution-only-normalization)
 - [Compatibility](#compatibility)
 - [Quick Start](#quick-start)
+- [Release One-Click Install and Uninstall](#release-one-click-install-and-uninstall)
 - [Upgrade](#upgrade)
 - [Install From GitHub](#install-from-github)
 - [Manual Windows Installation](#manual-windows-installation)
@@ -156,7 +157,7 @@ The plugin supports DSH `0.1.0-rc.5`, `0.1.0-rc.6`, and `0.1.0-rc.7`. At startup
 
 ### It won't add configuration burden
 
-Zero configuration. Install it into the Profile you actually use and start DSH as before. The test suite contains 27 tests built on real DSH packages, covering schema projection, Code Mode SDK generation, dynamic restrictions, multi-Agent isolation, delegate and wrapper-protocol replacement, failure-hint cleanup, and unload behavior.
+Zero configuration. Install it into the Profile you actually use and start DSH as before. The test suite contains 28 tests built on real DSH packages, covering schema projection, Code Mode SDK generation, dynamic restrictions, multi-Agent isolation, delegate and wrapper-protocol replacement, internal timeout-budget forwarding, failure-hint cleanup, and unload behavior.
 
 ## This Plugin vs. Execution-Only Normalization
 
@@ -187,6 +188,45 @@ dsh --profile <profile>
 ```
 
 You do not need to change the model configuration, Sandbox Mode, Approval Policy, or Agent Preset. The plugin projects the model-visible parameters from each Session's current permission state.
+
+## Release One-Click Install and Uninstall
+
+The `0.1.1` Release uses the DSH CLI, so no manual Profile patch editing is required. Download and extract `dsh-sandbox-escalation-fix-release.zip`; it contains the tarball, one-click install and uninstall scripts, and a concise Chinese usage guide.
+
+Close DSH before installing or removing the plugin. Ensure that `dsh` is available on PATH and that the running DSH version is rc5, rc6, or rc7.
+
+### Install into the default Web Profile
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\install-release.ps1"
+```
+
+The script runs `dsh plugin --profile web add <tgz-absolute-path>`.
+
+### Install or remove another Profile
+
+For example, use `headless` instead of the default `web` Profile:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\install-release.ps1" -Profile headless
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\uninstall-release.ps1" -Profile headless
+```
+
+### Remove from the default Web Profile
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\uninstall-release.ps1"
+```
+
+The removal script runs `dsh plugin --profile web remove dsh-sandbox-escalation-fix`. Restart DSH after installation or removal.
+
+### Build the Release ZIP
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
+```
+
+The script builds `lib`, packages the npm tarball, then creates `dsh-sandbox-escalation-fix-release.zip` in `release/`. The generated directory is ignored by Git; upload only this ZIP as the GitHub Release asset.
 
 ## Upgrade
 
