@@ -1,9 +1,12 @@
-# dsh-sandbox-escalation-fix (RC7 is now supported)
+# dsh-sandbox-escalation-fix (RC8 is now supported)
 
 English | [中文](README.zh.md)
 
 > [!IMPORTANT]
 > This is an independent community plugin. It is not published, maintained, or endorsed by DeepSeek, and it does not modify DeepSeek Harness core packages.
+
+> [!CAUTION]
+> DSH rc8 partially improves this issue through an `approval=never` runtime instruction, but tool schemas may still advertise escalation fields that the current Session cannot use, and real-world reliability is not yet clear. **RC8 users should first observe the built-in behavior and install this plugin only after reproducing the same-mode escalation, blank justification, or retry-loop failures described below.**
 
 **dsh-sandbox-escalation-fix** is a zero-configuration compatibility plugin that directly resolves the issue of third-party models like GPT failing to call tools such as `bash`, `pwsh`, `write`, and `edit` under DSH All Access, resulting in repeated retries due to incorrect sandbox escalation parameter prompts.
 
@@ -153,7 +156,7 @@ The plugin listens to Agent creation, disposal, Preset changes, restrictions, an
 
 ### It won't lock you to a single DSH release
 
-The plugin supports DSH `0.1.0-rc.5`, `0.1.0-rc.6`, and `0.1.0-rc.7`. At startup it verifies that the installed `@deepseek-ai/dsh-*` packages are consistent and supported. Incompatible tool definitions fail explicitly instead of producing silent misbehavior.
+The plugin supports DSH `0.1.0-rc.5`, `0.1.0-rc.6`, `0.1.0-rc.7`, and `0.1.0-rc.8`. At startup it verifies that the installed `@deepseek-ai/dsh-*` packages are consistent and supported. Incompatible tool definitions fail explicitly instead of producing silent misbehavior.
 
 ### It won't add configuration burden
 
@@ -174,10 +177,10 @@ Zero configuration. Install it into the Profile you actually use and start DSH a
 ## Compatibility
 
 - Node.js `^22.19.0` or `>=24.0.0`
-- `@deepseek-ai/dsh-*` `0.1.0-rc.5`, `0.1.0-rc.6`, or `0.1.0-rc.7`
+- `@deepseek-ai/dsh-*` `0.1.0-rc.5`, `0.1.0-rc.6`, `0.1.0-rc.7`, or `0.1.0-rc.8`
 - `@deepseek-ai/cordis` `4.0.1`
 
-The plugin checks the installed DSH package versions at startup. Mixed rc.5/rc.6/rc.7 installations and unknown DSH versions fail explicitly. An initially visible target with partial escalation fields or an incompatible output definition rejects that Agent's registration; a target that omits both escalation fields is accepted as already safe. During runtime, a Preset restriction or stable provider removal makes the wrapper dormant, while an incompatible replacement is isolated to that Agent and target tool and reported without terminating the Host process. A later compatible definition is wrapped automatically.
+The plugin checks the installed DSH package versions at startup. Mixed rc.5/rc.6/rc.7/rc.8 installations and unknown DSH versions fail explicitly. An initially visible target with partial escalation fields or an incompatible output definition rejects that Agent's registration; a target that omits both escalation fields is accepted as already safe. During runtime, a Preset restriction or stable provider removal makes the wrapper dormant, while an incompatible replacement is isolated to that Agent and target tool and reported without terminating the Host process. A later compatible definition is wrapped automatically.
 
 ## Quick Start
 
@@ -191,9 +194,9 @@ You do not need to change the model configuration, Sandbox Mode, Approval Policy
 
 ## Release One-Click Install and Uninstall
 
-The `0.1.1` Release uses the DSH CLI, so no manual Profile patch editing is required. Download and extract `dsh-sandbox-escalation-fix-release.zip`; it contains the tarball, one-click install and uninstall scripts, and a concise Chinese usage guide.
+The `0.1.2` Release uses the DSH CLI, so no manual Profile patch editing is required. Download and extract `dsh-sandbox-escalation-fix-release.zip`; it contains the tarball, one-click install and uninstall scripts, and a concise Chinese usage guide.
 
-Close DSH before installing or removing the plugin. Ensure that `dsh` is available on PATH and that the running DSH version is rc5, rc6, or rc7.
+Close DSH before installing or removing the plugin. Ensure that `dsh` is available on PATH and that the running DSH version is rc5, rc6, rc7, or rc8. RC8 users should install only after reproducing the affected behavior.
 
 ### Install into the default Web Profile
 

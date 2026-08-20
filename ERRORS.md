@@ -89,3 +89,10 @@
 - 现象：脚本输出完成信息，但目标 ZIP 不存在；tarball 和三个辅助文件均已生成。
 - 成因：当前 PowerShell 宿主的 `Compress-Archive` 路径处理不可靠。
 - 应对：改用 Windows 自带 `tar.exe -a -c` 输出 ZIP，并在 tar 返回非零退出码时立即停止构建。
+
+## 2026-08-20：长命令触发 PSReadLine 控制台渲染异常
+
+- 操作：在 Trae PowerShell 终端执行包含较多参数和多段 Git/npm 检查的长命令。
+- 现象：PSReadLine 报 `System.ArgumentOutOfRangeException`，控制台光标位置为负值，命令输入被重复渲染。
+- 成因：终端缓冲区与 PSReadLine 长命令渲染存在兼容性问题，不属于插件、DSH rc8 或测试失败。
+- 应对：停止异常终端，改用新终端和拆分后的短命令；以实际命令退出码和测试摘要作为验证依据。
