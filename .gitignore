@@ -1,6 +1,8 @@
 node_modules/
 lib/
 release/
+developreport/
+ERRORS.md
 coverage/
 .npm-cache/
 *.tgz
