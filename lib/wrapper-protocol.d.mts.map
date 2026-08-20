@@ -1,0 +1,1 @@
+{"version":3,"file":"wrapper-protocol.d.mts","names":[],"sources":["../src/wrapper-protocol.ts"],"mappings":";;cAEa;UAEI;WACN;;UAGM;WACN;WACA;EACT,oBAAoB,eAAe,SAAS;EAC5C,mBAAmB,OAAO,yBAAyB,SAAS,iBAAiB;EAC7E,SAAS,eAAe,MAAM,gBAAgB,OAAO,kBAAkB,mBAAmB;;UAG3E;WACN;WACA;WACA;EACT,WAAW,OAAO;;KAGR,4BAA4B;YAC5B,yBAAyB;;iBAGrB,WAAW,YAAY,iBAAiB"}
