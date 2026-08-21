@@ -1,4 +1,4 @@
-# dsh-sandbox-escalation-fix（已支持 rc8）
+# dsh-sandbox-escalation-fix（已支持 DSH 0.1.1-rc.1）
 
 [English](README.md) | 中文
 
@@ -6,7 +6,7 @@
 > 这是独立开发的社区插件，不是 DeepSeek 官方发布、维护或背书的插件。它不会修改 DeepSeek Harness 的核心代码。
 
 > [!CAUTION]
-> DSH rc8 已通过 `approval=never` 的运行时提示对错误升级问题做了部分改善，但工具 Schema 仍可能公开当前 Session 无法使用的升级字段，实际可靠性尚未明确。**建议 rc8 用户先观察原生行为，仅在实际遇到本文所列的同模式升级、空 justification 或反复重试问题后再安装本插件。**
+> DSH rc8 已通过 `approval=never` 的运行时提示对错误升级问题做了部分改善，但 DSH `0.1.1-rc.1` 仍使用相同的静态升级 Schema 和执行期校验。**建议 rc8 与 0.1.1-rc.1 用户先观察原生行为，仅在实际遇到本文所列的同模式升级、空 justification 或反复重试问题后再安装本插件。**
 
 **dsh-sandbox-escalation-fix** 是一个零配置兼容插件，直接解决 GPT 等第三方模型在 DSH All Access 下调用 `bash`、`pwsh`、`write`、`edit` 等工具时，因为错误的沙箱升级参数提示而调用失败、反复重试的问题。
 
@@ -159,7 +159,7 @@ Session B = danger-full-access + never   → 看不到升级字段
 
 ### 它不会只支持单一 DSH 版本
 
-插件同时支持 DSH `0.1.0-rc.5`、`0.1.0-rc.6`、`0.1.0-rc.7` 和 `0.1.0-rc.8`，并在加载时校验 DSH 各包版本是否一致且受支持。遇到不兼容的工具定义会主动拒绝安装，而不是在运行中产生难以排查的诡异行为。
+插件同时支持 DSH `0.1.0-rc.5`、`0.1.0-rc.6`、`0.1.0-rc.7`、`0.1.0-rc.8` 和 `0.1.1-rc.1`，并在加载时校验 DSH 各包版本是否一致且受支持。遇到不兼容的工具定义会主动拒绝安装，而不是在运行中产生难以排查的诡异行为。
 
 ### 它不会给你增加配置负担
 
@@ -189,16 +189,16 @@ dsh --profile <profile>
 
 ## Release 一键安装与卸载
 
-`0.1.2` Release 包通过 DSH CLI 管理插件，不需要手动编辑 Profile Patch。Release ZIP 解压后包含以下四个文件：
+`0.1.1-rc1` Release 包通过 DSH CLI 管理插件，不需要手动编辑 Profile Patch。原有 `v0.1.2` Release 保留，继续提供给 DSH rc8 用户。新版 Release ZIP 解压后包含以下四个文件：
 
 ```text
-dsh-sandbox-escalation-fix-0.1.2.tgz
+dsh-sandbox-escalation-fix-0.1.1-rc1.tgz
 install-release.ps1
 uninstall-release.ps1
 RELEASE-USAGE.zh.md
 ```
 
-安装或卸载前先完全关闭 DSH。双击脚本前，请确认系统已将 `dsh` 命令加入 PATH，且当前 DSH 使用的是 rc5、rc6、rc7 或 rc8。rc8 用户建议先实际复现同类错误，再决定是否安装。
+安装或卸载前先完全关闭 DSH。双击脚本前，请确认系统已将 `dsh` 命令加入 PATH，且当前 DSH 使用的是 rc5、rc6、rc7、rc8 或 `0.1.1-rc.1`。rc8 与 0.1.1-rc.1 用户建议先实际复现同类错误，再决定是否安装。
 
 ### 安装到默认 Web Profile
 
@@ -256,7 +256,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\uninstall-release.ps1" -P
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
 ```
 
-该脚本会先构建 `lib`，再执行 `npm pack` 生成 `.tgz`，最后在 `release` 目录生成 `dsh-sandbox-escalation-fix-release.zip`。ZIP 内含 tarball、两个一键脚本和简明中文使用说明；上传 GitHub Release 时只需上传该 ZIP。
+该脚本会先构建 `lib`，再执行 `npm pack` 生成 `.tgz`，最后在 `release` 目录生成 `dsh-sandbox-escalation-fix-0.1.1-rc1-release.zip`。ZIP 内含 tarball、两个一键脚本和简明中文使用说明；上传 GitHub Release 时只需上传该 ZIP。
 
 ## 升级插件
 
@@ -686,7 +686,7 @@ dsh --profile <profile> --dump-config
 | 复制了整个开发文件夹 | 可以保留，但必须删除目标插件目录内部的 `node_modules`，并确认没有多套一层同名目录 |
 | YAML 启动报错 | 检查 `- insert:` 是否顶格、是否误加了方括号或引号，以及缩进是否只使用空格 |
 | Git 安装构建失败 | 确认 Profile 的 `pnpm-workspace.yaml` 已允许构建 `dsh-sandbox-escalation-fix`，然后重新安装 |
-| 启动时报版本错误 | 不要混装 rc.5、rc.6、rc.7 与 rc.8 包；让 Profile 中关键 `@deepseek-ai/dsh-*` 包保持同一版本 |
+| 启动时报版本错误 | 不要混装 rc.5、rc.6、rc.7、rc.8 与 0.1.1-rc.1 包；让 Profile 中关键 `@deepseek-ai/dsh-*` 包保持同一版本 |
 | Agent 注册时报同名工具冲突 | 另一个插件已在 Agent Exact Scope 注册 `bash`、`pwsh`、`write` 或 `edit`，且未实现协作协议；只能卸载其中一个 |
 | 动态 Preset 隐藏了部分工具 | 这是正常行为；插件会镜像 `tools.restrict()`，限制解除后自动恢复包装 |
 | 日志出现动态协调警告 | 检查警告中目标工具的替换定义；其他工具和 Agent 会继续工作，兼容定义出现后自动恢复 |
@@ -695,12 +695,12 @@ dsh --profile <profile> --dump-config
 ## 支持范围
 
 - Node.js `^22.19.0` 或 `>=24.0.0`
-- `@deepseek-ai/dsh-*` `0.1.0-rc.5`、`0.1.0-rc.6`、`0.1.0-rc.7`、`0.1.0-rc.8`
+- `@deepseek-ai/dsh-*` `0.1.0-rc.5`、`0.1.0-rc.6`、`0.1.0-rc.7`、`0.1.0-rc.8`、`0.1.1-rc.1`
 - `@deepseek-ai/cordis` `4.0.1`
 
 插件针对这些版本的公开 Scope、ToolRuntime、Sandbox Policy 与 Approval Service 契约构建。Agent 初次创建时，已可见的目标工具定义或同 Scope 包装协议不兼容会严格拒绝该 Agent 注册。
 
-启动时会读取关键 `@deepseek-ai/dsh-*` 包的实际版本；rc.5/rc.6/rc.7/rc.8 混装或未知版本会拒绝启动。目标工具同时省略两个升级字段时视为已经安全。运行期的 Preset 限制或 Provider 稳定删除会让包装器进入休眠；运行期替换为字段残缺或输出定义不兼容的工具时，只隔离对应 Agent 的对应工具并记录警告，不会终止 Host 进程，后续兼容定义出现时自动恢复。
+启动时会读取关键 `@deepseek-ai/dsh-*` 包的实际版本；rc.5/rc.6/rc.7/rc.8/0.1.1-rc.1 混装或未知版本会拒绝启动。目标工具同时省略两个升级字段时视为已经安全。运行期的 Preset 限制或 Provider 稳定删除会让包装器进入休眠；运行期替换为字段残缺或输出定义不兼容的工具时，只隔离对应 Agent 的对应工具并记录警告，不会终止 Host 进程，后续兼容定义出现时自动恢复。
 
 ## 开发验证
 
