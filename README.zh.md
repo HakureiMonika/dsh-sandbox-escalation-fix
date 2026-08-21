@@ -6,7 +6,7 @@
 > 这是独立开发的社区插件，不是 DeepSeek 官方发布、维护或背书的插件。它不会修改 DeepSeek Harness 的核心代码。
 
 > [!CAUTION]
-> DSH *0.1.0-rc8* & *0.1.1-rc.1* 已通过 `approval=never` 的运行时提示对错误升级问题做了部分改善，但 DSH `0.1.1-rc.1` 仍使用相同的静态升级 Schema 和执行期校验。**建议 rc8 与 0.1.1-rc.1 用户先观察原生行为，仅在实际遇到本文所列的同模式升级、空 justification 或反复重试问题后再安装本插件。**
+> DSH `0.1.0-rc8` & `0.1.1-rc.1` 已通过 `approval=never` 的运行时提示对错误升级问题做了部分改善，但 DSH `0.1.1-rc.1` 仍使用相同的静态升级 Schema 和执行期校验。**建议 `0.1.0-rc8` 与 `0.1.1-rc.1` 用户先观察原生行为，仅在实际遇到本文所列的同模式升级、空 justification 或反复重试问题后再安装本插件。**
 
 **dsh-sandbox-escalation-fix** 是一个零配置兼容插件，直接解决 GPT 等第三方模型在 DSH All Access 下调用 `bash`、`pwsh`、`write`、`edit` 等工具时，因为错误的沙箱升级参数提示而调用失败、反复重试的问题。
 
