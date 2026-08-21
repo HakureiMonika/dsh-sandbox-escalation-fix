@@ -1,4 +1,4 @@
-# dsh-sandbox-escalation-fix (DSH 0.1.1-rc.1 is now supported)
+# dsh-sandbox-escalation-fix (0.1.1-rc.1 is now supported)
 
 English | [中文](README.zh.md)
 
