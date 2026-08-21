@@ -6,7 +6,7 @@ English | [中文](README.zh.md)
 > This is an independent community plugin. It is not published, maintained, or endorsed by DeepSeek, and it does not modify DeepSeek Harness core packages.
 
 > [!CAUTION]
-> DSH *0.1.0-rc8* & *0.1.1-rc.1* partially improves this issue through an `approval=never` runtime instruction, but DSH `0.1.1-rc.1` still uses the same static escalation schema and execution-time validation. **RC8 and 0.1.1-rc.1 users should first observe the built-in behavior and install this plugin only after reproducing the same-mode escalation, blank justification, or retry-loop failures described below.**
+> DSH `0.1.0-rc8` & `0.1.1-rc.1` partially improves this issue through an `approval=never` runtime instruction, but DSH `0.1.1-rc.1` still uses the same static escalation schema and execution-time validation. **`0.1.0-rc8` and `0.1.1-rc.1` users should first observe the built-in behavior and install this plugin only after reproducing the same-mode escalation, blank justification, or retry-loop failures described below.**
 
 **dsh-sandbox-escalation-fix** is a zero-configuration compatibility plugin that directly resolves the issue of third-party models like GPT failing to call tools such as `bash`, `pwsh`, `write`, and `edit` under DSH All Access, resulting in repeated retries due to incorrect sandbox escalation parameter prompts.
 
