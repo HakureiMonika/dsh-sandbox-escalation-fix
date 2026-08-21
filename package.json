@@ -1,6 +1,6 @@
 {
   "name": "dsh-sandbox-escalation-fix",
-  "version": "0.1.1-rc1",
+  "version": "0.1.1-rc2",
   "description": "Session-aware sandbox escalation compatibility plugin for DeepSeek Harness",
   "keywords": [
     "deepseek-harness",
@@ -39,7 +39,7 @@
     "README.md",
     "README.zh.md",
     "Tutorials that even Peppa Pig can understand",
-    "奶龙也能看懂的食用说明.txt",
+    "???????????.txt",
     "LICENSE"
   ],
   "scripts": {

@@ -1,6 +1,6 @@
 # dsh-sandbox-escalation-fix (0.1.1-rc.2 is now supported)
 
-English | [中文](README.zh.md)
+English | [??](README.zh.md)
 
 > [!IMPORTANT]
 > This is an independent community plugin. It is not published, maintained, or endorsed by DeepSeek, and it does not modify DeepSeek Harness core packages.
@@ -59,7 +59,7 @@ This plugin projects the model-visible tool schema per session, based on the liv
 - Models still see and send `sandbox_permissions` / `justification` in All Access sessions, so tools fail before they run.
 - In `workspace-write` sessions, models see two escalation targets even though only `danger-full-access` is genuinely wider.
 - With `approval=never`, models are still told escalation is possible when every request will be rejected.
-- Tool descriptions and denial results keep saying “escalation available,” which pushes the model to retry.
+- Tool descriptions and denial results keep saying ?escalation available,? which pushes the model to retry.
 - Native Tool Call and Code Mode SDK can show inconsistent capability surfaces.
 
 ### Why It Happens
@@ -113,9 +113,9 @@ The execution fallback is deliberately narrow: it removes `sandbox_permissions` 
 
 Downgrade or invalid requests are left untouched and go through normal DSH validation:
 
-- `danger-full-access` + request `danger-full-access` → ignored, tool runs normally;
-- `danger-full-access` + request `workspace-write` → not executed as Full access;
-- `read-only` + a wider request → enters the normal approval flow.
+- `danger-full-access` + request `danger-full-access` ? ignored, tool runs normally;
+- `danger-full-access` + request `workspace-write` ? not executed as Full access;
+- `read-only` + a wider request ? enters the normal approval flow.
 
 It will not trade a clear error for silently running a call with broader access than the caller asked for.
 
@@ -123,7 +123,7 @@ It will not trade a clear error for silently running a call with broader access 
 
 For genuine escalation requests, the plugin does not fill in a fake or placeholder justification. Missing, blank, or invalid reasons still go through DSH's own validation, so the approval flow sees honest, auditable input.
 
-### It won't say “don't escalate” while results say “escalation available”
+### It won't say ?don't escalate? while results say ?escalation available?
 
 When the session has no viable escalation target, the plugin also cleans up the natural-language side:
 
@@ -146,8 +146,8 @@ The model no longer receives contradictory instructions from the parameter schem
 Wrapping happens per Agent/Session, never on the global tool registry. In the same process:
 
 ```text
-Session A = read-only + ask              → sees two escalation targets
-Session B = danger-full-access + never   → sees no escalation fields
+Session A = read-only + ask              ? sees two escalation targets
+Session B = danger-full-access + never   ? sees no escalation fields
 ```
 
 Each session is independent. If a session switches permission state mid-flight, the next model request gets a freshly projected schema.
@@ -196,7 +196,7 @@ You do not need to change the model configuration, Sandbox Mode, Approval Policy
 
 ## Release One-Click Install and Uninstall
 
-The `0.1.1-rc1` Release uses the DSH CLI, so no manual Profile patch editing is required. Download and extract `dsh-sandbox-escalation-fix-0.1.1-rc1-release.zip`; it contains the tarball, one-click install and uninstall scripts, and a concise Chinese usage guide. The earlier `v0.1.2` Release remains available for DSH rc8 users.
+The `0.1.1-rc2` Release uses the DSH CLI, so no manual Profile patch editing is required. Download and extract `dsh-sandbox-escalation-fix-0.1.1-rc2-release.zip`; it contains the tarball, one-click install and uninstall scripts, and a concise Chinese usage guide. The earlier `v0.1.2` and `v0.1.1-rc1` Releases remain available.
 
 Close DSH before installing or removing the plugin. Ensure that `dsh` is available on PATH and that the running DSH version is rc5, rc6, rc7, rc8, `0.1.1-rc.1`, or `0.1.1-rc.2`. Users should install only after reproducing the affected behavior.
 
@@ -231,7 +231,7 @@ The removal script runs `dsh plugin --profile web remove dsh-sandbox-escalation-
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
 ```
 
-The script builds `lib`, packages the npm tarball, then creates `dsh-sandbox-escalation-fix-0.1.1-rc1-release.zip` in `release/`. The generated directory is ignored by Git; upload only this ZIP as the GitHub Release asset.
+The script builds `lib`, packages the npm tarball, then creates `dsh-sandbox-escalation-fix-0.1.1-rc2-release.zip` in `release/`. The generated directory is ignored by Git; upload only this ZIP as the GitHub Release asset.
 
 ## Upgrade
 
@@ -286,26 +286,26 @@ dsh --profile <profile>
 
 ## Manual Windows Installation
 
-A detailed Windows walkthrough — Profile paths, folder layout, nested `node_modules`, and the correct replacement for an empty `[]` patch — is available in [README.zh.md](README.zh.md#手动覆盖安装).
+A detailed Windows walkthrough ? Profile paths, folder layout, nested `node_modules`, and the correct replacement for an empty `[]` patch ? is available in [README.zh.md](README.zh.md#??????).
 
-For a compact file-by-file walkthrough, see [Tutorials that even Peppa Pig can understand](Tutorials%20that%20even%20Peppa%20Pig%20can%20understand). The original Chinese layout is preserved in [奶龙也能看懂的食用说明.txt](奶龙也能看懂的食用说明.txt).
+For a compact file-by-file walkthrough, see [Tutorials that even Peppa Pig can understand](Tutorials%20that%20even%20Peppa%20Pig%20can%20understand). The original Chinese layout is preserved in [???????????.txt](???????????.txt).
 
 The minimum manual layout is:
 
 ```text
 <profile-directory>\
-├── cordis.patch.yml
-└── node_modules\
-    └── dsh-sandbox-escalation-fix\
-        ├── package.json
-        ├── cordis.patch.yml
-        ├── README.md
-        ├── README.zh.md
-        └── lib\
-            ├── index.mjs
-            ├── index.d.mts
-            ├── wrapper-protocol.mjs
-            └── wrapper-protocol.d.mts
+??? cordis.patch.yml
+??? node_modules\
+    ??? dsh-sandbox-escalation-fix\
+        ??? package.json
+        ??? cordis.patch.yml
+        ??? README.md
+        ??? README.zh.md
+        ??? lib\
+            ??? index.mjs
+            ??? index.d.mts
+            ??? wrapper-protocol.mjs
+            ??? wrapper-protocol.d.mts
 ```
 
 Merge this block into the Profile's `cordis.patch.yml`; do not overwrite unrelated Profile patches:
@@ -354,7 +354,7 @@ Run it with a supported Node.js version available on PATH. Wait for `dsh web: ht
 6. Switch workspaces and open existing sessions to confirm normal session restoration.
 7. If the Preset uses `agent.ctx.tools.restrict()`, enter its restricted state and confirm hidden tools disappear; lift the restriction and confirm they return without recreating the Agent.
 
-The calls should complete without `sandbox_permissions` argument errors or impossible escalation advice. Existing sessions should remain visible, workspace switching should work, and new sessions should be created in the selected workspace. The complete manual acceptance checklist is in [README.zh.md](README.zh.md#人工测试清单).
+The calls should complete without `sandbox_permissions` argument errors or impossible escalation advice. Existing sessions should remain visible, workspace switching should work, and new sessions should be created in the selected workspace. The complete manual acceptance checklist is in [README.zh.md](README.zh.md#??????).
 
 ## Wrapper Conflicts
 
