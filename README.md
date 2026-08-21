@@ -8,6 +8,8 @@ English | [中文](README.zh.md)
 > [!CAUTION]
 > DSH `0.1.0-rc8`, `0.1.1-rc.1`, and `0.1.1-rc.2` partially improve this issue through an `approval=never` runtime instruction, but still use the same static escalation schema and execution-time validation. **Users of these versions should first observe the built-in behavior and install this plugin only after reproducing the same-mode escalation, blank justification, or retry-loop failures described below.**
 
+DSH `0.1.1-rc.2` focuses on image handling: the DeepSeek adapter prefers Files API uploads, reuses uploaded files, and automatically resizes or converts images for model requirements. The sandbox escalation, Bash, Pwsh, ToolRuntime, and approval implementations used by this plugin are unchanged from `0.1.1-rc.1`, so rc.2 neither fixes the issue described here nor requires a plugin logic change.
+
 **dsh-sandbox-escalation-fix** is a zero-configuration compatibility plugin that directly resolves the issue of third-party models like GPT failing to call tools such as `bash`, `pwsh`, `write`, and `edit` under DSH All Access, resulting in repeated retries due to incorrect sandbox escalation parameter prompts.
 
 If you've encountered the following errors, this plugin is designed for them:
