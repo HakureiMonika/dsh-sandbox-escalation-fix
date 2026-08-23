@@ -1,6 +1,6 @@
 # dsh-sandbox-escalation-fix (0.1.1-rc.2 is now supported)
 
-English | [??](README.zh.md)
+English | [简体中文?](README.zh.md)
 
 > [!IMPORTANT]
 > This is an independent community plugin. It is not published, maintained, or endorsed by DeepSeek, and it does not modify DeepSeek Harness core packages.
