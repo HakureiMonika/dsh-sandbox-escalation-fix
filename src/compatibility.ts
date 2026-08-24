@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module'
+import { join } from 'node:path'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 
 // 仅列入已使用对应真实 DSH 包完成构建和集成测试的版本，避免仅凭 semver 范围放行未知契约。
@@ -16,7 +17,30 @@ const DSH_PACKAGES = [
 ] as const
 const TARGET_NAMES = new Set(['bash', 'pwsh', 'write', 'edit'])
 const ESCALATION_FIELDS = ['sandbox_permissions', 'justification'] as const
-const require = createRequire(import.meta.url)
+
+/**
+ * Attempt to read a package manifest across multiple candidate base paths.
+ * When the plugin is symlinked (e.g. via `pnpm link` or local workspace link),
+ * `import.meta.url` points to the physical plugin directory which may not
+ * contain the host application's peer dependencies.
+ */
+function readPackageManifest(name: string): unknown {
+  const candidatePaths: (string | undefined)[] = [
+    import.meta.url,
+    process.env.DSH_HOME ? join(process.env.DSH_HOME, 'package.json') : undefined,
+    join(process.cwd(), 'package.json'),
+  ]
+
+  for (const candidate of candidatePaths) {
+    if (!candidate) continue
+    try {
+      const candidateRequire = createRequire(candidate)
+      return candidateRequire(`${name}/package.json`)
+    } catch {}
+  }
+
+  throw new Error(`cannot resolve "${name}/package.json" from plugin, DSH_HOME, or cwd`)
+}
 
 export function validateDshVersionSet(
   versions: Readonly<Record<string, string>>,
@@ -39,7 +63,7 @@ export function validateDshRuntime(): void {
   for (const name of DSH_PACKAGES) {
     let manifest: unknown
     try {
-      manifest = require(`${name}/package.json`)
+      manifest = readPackageManifest(name)
     } catch (error) {
       throw new Error(`dsh-sandbox-escalation-fix: cannot read ${name}/package.json`, { cause: error })
     }
