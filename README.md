@@ -10,7 +10,7 @@ English | [简体中文](README.zh.md)
 
 DSH `0.1.1-rc.2` focuses on image handling: the DeepSeek adapter prefers Files API uploads, reuses uploaded files, and automatically resizes or converts images for model requirements. The sandbox escalation, Bash, Pwsh, ToolRuntime, and approval implementations used by this plugin are unchanged from `0.1.1-rc.1`, so rc.2 neither fixes the issue described here nor requires a plugin logic change.
 
-Plugin `0.1.1-desktop.1` adds compatibility with DSH Desktop `2.0.3`. Desktop 2.0.3 deliberately limits its CommonJS package-manifest overlay to direct Profile anchors, so a third-party plugin cannot read host `@deepseek-ai/dsh-*/package.json` files from its own module. When all checked manifests are hidden uniformly, this plugin now uses its existing strict runtime tool-contract validation instead. Partially readable manifests, mixed versions, malformed manifests, and incompatible tool definitions still fail closed.
+Plugin `0.1.1-desktop.2` includes compatibility with DSH Desktop `2.0.3`. Desktop 2.0.3 deliberately limits its CommonJS package-manifest overlay to direct Profile anchors, so a third-party plugin cannot read host `@deepseek-ai/dsh-*/package.json` files from its own module. When all checked manifests are hidden uniformly, this plugin uses its existing strict runtime tool-contract validation instead. Partially readable manifests, mixed versions, malformed manifests, and incompatible tool definitions still fail closed.
 
 Linked and external plugin layouts are also supported. If `link:`, a workspace symlink, or an external plugin directory places the plugin outside the host dependency tree, the compatibility gate may read the complete DSH manifest set from the host working directory. One candidate root must provide the entire checked package set: partial roots, cross-root package mixing, malformed manifests, and non-resolution loader errors still fail closed. `DSH_HOME` is not treated as a dependency root because it stores Harness configuration and Profile data rather than a stable Node.js package tree.
 
@@ -200,7 +200,7 @@ You do not need to change the model configuration, Sandbox Mode, Approval Policy
 
 ## Release One-Click Install and Uninstall
 
-The `0.1.1-desktop.1` Release uses the DSH CLI, so no manual Profile patch editing is required. Download and extract `dsh-sandbox-escalation-fix-0.1.1-desktop.1-release.zip`; it contains the tarball, one-click install and uninstall scripts, and a concise Chinese usage guide. The earlier `v0.1.2`, `v0.1.1-rc1`, and `v0.1.1-rc2` Releases remain available.
+The `0.1.1-desktop.2` Release includes both Desktop 2.0.3 compatibility and the linked/external plugin resolution enhancement from PR #5. It uses the DSH CLI, so no manual Profile patch editing is required. Download and extract `dsh-sandbox-escalation-fix-0.1.1-desktop.2-release.zip`; it contains the tarball, one-click install and uninstall scripts, and a concise Chinese usage guide. The earlier `v0.1.1-desktop.1`, `v0.1.2`, `v0.1.1-rc1`, and `v0.1.1-rc2` Releases remain available.
 
 Close DSH before installing or removing the plugin. Ensure that `dsh` is available on PATH and that the running DSH version is rc5, rc6, rc7, rc8, `0.1.1-rc.1`, or `0.1.1-rc.2`. Users should install only after reproducing the affected behavior.
 
@@ -235,7 +235,7 @@ The removal script runs `dsh plugin --profile web remove dsh-sandbox-escalation-
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
 ```
 
-The script builds `lib`, packages the npm tarball, then creates `dsh-sandbox-escalation-fix-0.1.1-desktop.1-release.zip` in `release/`. The generated directory is ignored by Git; upload only this ZIP as the GitHub Release asset.
+The script builds `lib`, packages the npm tarball, then creates `dsh-sandbox-escalation-fix-0.1.1-desktop.2-release.zip` in `release/`. The generated directory is ignored by Git; upload only this ZIP as the GitHub Release asset.
 
 ## Upgrade
 
@@ -396,6 +396,12 @@ dsh plugin --profile <profile> remove dsh-sandbox-escalation-fix
 ```
 
 The plugin lifecycle removes its wrapper hosts, wrapper layers, and result filters. Confirm that `--dump-config` no longer lists the bundle after removal.
+
+## Contributors
+
+- [sprainJinyu](https://github.com/sprainJinyu) / 张金雨 — proposed the linked and external plugin package-resolution fallback in PR #5.
+
+The original commit used `zhang.jy@topsports.com.cn`. GitHub currently lists it as an anonymous contribution; verifying that email on the contributor's GitHub account allows GitHub to associate the existing commit with `sprainJinyu` after reindexing.
 
 ## Development
 

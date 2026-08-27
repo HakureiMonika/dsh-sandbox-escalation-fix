@@ -10,7 +10,7 @@
 
 DSH `0.1.1-rc.2` 的官方更新集中在图像处理：DeepSeek 适配器优先使用 Files API 上传图像、复用已上传文件，并根据模型要求自动缩放和转换图像格式。与本插件相关的 Sandbox 升级、Bash、Pwsh、ToolRuntime 和审批实现均与 `0.1.1-rc.1` 相同，因此 rc.2 没有修复本文问题，也不需要调整插件核心逻辑。
 
-插件 `0.1.1-desktop.1` 增加了对 DSH Desktop `2.0.3` 的兼容。Desktop 2.0.3 会把 CommonJS 包清单覆盖解析限制在 Profile 的直接锚点，因此第三方插件自身无法读取宿主的 `@deepseek-ai/dsh-*/package.json`。当所有受检清单都被宿主统一隐藏时，本插件改用现有的严格运行时工具契约校验；部分清单可读、版本混装、清单损坏或工具定义不兼容时仍会拒绝运行。
+插件 `0.1.1-desktop.2` 包含对 DSH Desktop `2.0.3` 的兼容。Desktop 2.0.3 会把 CommonJS 包清单覆盖解析限制在 Profile 的直接锚点，因此第三方插件自身无法读取宿主的 `@deepseek-ai/dsh-*/package.json`。当所有受检清单都被宿主统一隐藏时，本插件改用现有的严格运行时工具契约校验；部分清单可读、版本混装、清单损坏或工具定义不兼容时仍会拒绝运行。
 
 插件也支持 `link:`、工作区软链接和外部插件目录等加载方式。当插件物理目录位于宿主依赖树之外时，兼容门禁可以从宿主当前工作目录读取完整的 DSH 包清单集合。每个候选解析根必须独立提供全部受检包；部分包集、跨解析根拼接、清单损坏和非模块缺失类加载错误仍会拒绝运行。`DSH_HOME` 只存放 Harness 配置和 Profile 数据，不是稳定的 Node.js 依赖根，因此不会被用于依赖解析。
 
@@ -195,10 +195,10 @@ dsh --profile <profile>
 
 ## Release 一键安装与卸载
 
-`0.1.1-desktop.1` Release 包通过 DSH CLI 管理插件，不需要手动编辑 Profile Patch。原有 `v0.1.2`、`v0.1.1-rc1` 和 `v0.1.1-rc2` Release 均保留。新版 Release ZIP 解压后包含以下四个文件：
+`0.1.1-desktop.2` Release 同时包含 Desktop 2.0.3 兼容和 PR #5 的软链接/外部插件目录解析增强，并通过 DSH CLI 管理插件，不需要手动编辑 Profile Patch。原有 `v0.1.1-desktop.1`、`v0.1.2`、`v0.1.1-rc1` 和 `v0.1.1-rc2` Release 均保留。新版 Release ZIP 解压后包含以下四个文件：
 
 ```text
-dsh-sandbox-escalation-fix-0.1.1-desktop.1.tgz
+dsh-sandbox-escalation-fix-0.1.1-desktop.2.tgz
 install-release.ps1
 uninstall-release.ps1
 RELEASE-USAGE.zh.md
@@ -262,7 +262,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\uninstall-release.ps1" -P
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
 ```
 
-该脚本会先构建 `lib`，再执行 `npm pack` 生成 `.tgz`，最后在 `release` 目录生成 `dsh-sandbox-escalation-fix-0.1.1-desktop.1-release.zip`。ZIP 内含 tarball、两个一键脚本和简明中文使用说明；上传 GitHub Release 时只需上传该 ZIP。
+该脚本会先构建 `lib`，再执行 `npm pack` 生成 `.tgz`，最后在 `release` 目录生成 `dsh-sandbox-escalation-fix-0.1.1-desktop.2-release.zip`。ZIP 内含 tarball、两个一键脚本和简明中文使用说明；上传 GitHub Release 时只需上传该 ZIP。
 
 ## 升级插件
 
@@ -707,6 +707,12 @@ dsh --profile <profile> --dump-config
 插件针对这些版本的公开 Scope、ToolRuntime、Sandbox Policy 与 Approval Service 契约构建。Agent 初次创建时，已可见的目标工具定义或同 Scope 包装协议不兼容会严格拒绝该 Agent 注册。
 
 启动时会读取关键 `@deepseek-ai/dsh-*` 包的实际版本；rc.5/rc.6/rc.7/rc.8/0.1.1-rc.1/0.1.1-rc.2 混装或未知版本会拒绝启动。目标工具同时省略两个升级字段时视为已经安全。运行期的 Preset 限制或 Provider 稳定删除会让包装器进入休眠；运行期替换为字段残缺或输出定义不兼容的工具时，只隔离对应 Agent 的对应工具并记录警告，不会终止 Host 进程，后续兼容定义出现时自动恢复。
+
+## 贡献者
+
+- [sprainJinyu](https://github.com/sprainJinyu) / 张金雨：在 PR #5 中提出了软链接和外部插件目录的包清单解析回退方案。
+
+原提交使用邮箱 `zhang.jy@topsports.com.cn`。GitHub 当前将其显示为匿名贡献；作者在 GitHub 账号中添加并验证该邮箱后，GitHub 重新索引时即可把现有提交自动归属到 `sprainJinyu`。
 
 ## 开发验证
 
