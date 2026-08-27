@@ -18,6 +18,11 @@ const TARGET_NAMES = new Set(['bash', 'pwsh', 'write', 'edit'])
 const ESCALATION_FIELDS = ['sandbox_permissions', 'justification'] as const
 const require = createRequire(import.meta.url)
 
+export interface DshRuntimeCompatibility {
+  mode: 'versioned' | 'structural'
+  unavailablePackages: readonly string[]
+}
+
 export function validateDshVersionSet(
   versions: Readonly<Record<string, string>>,
 ): void {
@@ -34,13 +39,21 @@ export function validateDshVersionSet(
   }
 }
 
-export function validateDshRuntime(): void {
+export function validateDshRuntime(
+  readManifest: (name: string) => unknown = name => require(`${name}/package.json`),
+): DshRuntimeCompatibility {
   const versions: Record<string, string> = {}
+  const unavailablePackages: string[] = []
   for (const name of DSH_PACKAGES) {
     let manifest: unknown
     try {
-      manifest = require(`${name}/package.json`)
+      manifest = readManifest(name)
     } catch (error) {
+      const code = (error as NodeJS.ErrnoException | null)?.code
+      if (code === 'MODULE_NOT_FOUND' || code === 'ERR_MODULE_NOT_FOUND') {
+        unavailablePackages.push(name)
+        continue
+      }
       throw new Error(`dsh-sandbox-escalation-fix: cannot read ${name}/package.json`, { cause: error })
     }
     if (typeof manifest !== 'object' || manifest === null
@@ -49,7 +62,14 @@ export function validateDshRuntime(): void {
     }
     versions[name] = manifest.version
   }
+  if (unavailablePackages.length === DSH_PACKAGES.length) {
+    return { mode: 'structural', unavailablePackages }
+  }
+  if (unavailablePackages.length > 0) {
+    throw new Error(`dsh-sandbox-escalation-fix: only some DSH package manifests are readable; unavailable packages: ${unavailablePackages.join(', ')}`)
+  }
   validateDshVersionSet(versions)
+  return { mode: 'versioned', unavailablePackages }
 }
 
 function record(value: unknown, label: string): Record<string, unknown> {

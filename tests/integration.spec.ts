@@ -12,8 +12,9 @@ import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition, ToolRunContext } from '@deepseek-ai/dsh-tools'
 import ApprovalService, { setApprovalPolicy } from '@deepseek-ai/dsh-user-approval'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import Plugin from '../src/index.ts'
+import { startPlugin } from '../src/index.ts'
 import { TOOL_WRAPPER_PROTOCOL } from '../src/wrapper-protocol.ts'
 import { createWrapperBinding } from '../src/wrapper.ts'
 
@@ -156,6 +157,22 @@ async function registeredHarness(): Promise<{ ctx: Context; agent: Agent }> {
 }
 
 describe('installed plugin', () => {
+  it('starts through structural validation when Desktop hides every manifest', async () => {
+    const ctx = new Context()
+    await ctx.plugin(SessionStore)
+    await ctx.plugin(SystemPrompt, {})
+    await ctx.plugin(ToolRuntime)
+    await ctx.plugin(AgentRegistry)
+    await ctx.plugin(SandboxPolicyService, { mode: 'danger-full-access' })
+    await ctx.plugin(ApprovalService, { policy: 'never' })
+    const warning = vi.spyOn(ctx.logger, 'warn')
+    await ctx.plugin(Object.assign((inner: Context) => {
+      startPlugin(inner, {}, { mode: 'structural', unavailablePackages: [] })
+    }, { inject: ['agents', 'tools', 'sandboxPolicy', 'approval'] }))
+    expect(warning).toHaveBeenCalledWith(expect.stringContaining('strict runtime tool-contract validation'))
+    await ctx.fiber.dispose()
+  })
+
   it('does not require scopeOf(agent.ctx) from the plugin package instance', async () => {
     const { ctx, agent } = await registeredHarness()
     expect(ctx.agents.get(agent.id)).toBe(agent)

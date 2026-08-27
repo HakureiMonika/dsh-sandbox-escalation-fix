@@ -3,8 +3,8 @@ param()
 
 $ErrorActionPreference = 'Stop'
 Set-Location -LiteralPath $PSScriptRoot
-$releaseTarball = '.\release\dsh-sandbox-escalation-fix-0.1.1-rc2.tgz'
-$releaseZip = Join-Path $PSScriptRoot 'release\dsh-sandbox-escalation-fix-0.1.1-rc2-release.zip'
+$releaseTarball = '.\release\dsh-sandbox-escalation-fix-0.1.1-desktop.1.tgz'
+$releaseZip = Join-Path $PSScriptRoot 'release\dsh-sandbox-escalation-fix-0.1.1-desktop.1-release.zip'
 
 # ??? npm pack ???? package.json ????? PowerShell ?? JSON ????????????
 # ????????????release ?????????????? npm pack ???????
@@ -28,7 +28,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 Add-Type -AssemblyName System.IO.Compression
 $archive = [System.IO.Compression.ZipFile]::Open($releaseZip, [System.IO.Compression.ZipArchiveMode]::Create)
 try {
-  foreach ($name in @('dsh-sandbox-escalation-fix-0.1.1-rc2.tgz', 'install-release.ps1', 'uninstall-release.ps1', 'RELEASE-USAGE.zh.md')) {
+  foreach ($name in @('dsh-sandbox-escalation-fix-0.1.1-desktop.1.tgz', 'install-release.ps1', 'uninstall-release.ps1', 'RELEASE-USAGE.zh.md')) {
     $source = Join-Path $PSScriptRoot "release\$name"
     [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $source, $name, [System.IO.Compression.CompressionLevel]::Optimal) | Out-Null
   }
@@ -37,5 +37,5 @@ try {
 }
 if (-not (Test-Path -LiteralPath $releaseZip -PathType Leaf)) { throw 'Release ZIP was not generated.' }
 
-Write-Output 'Release bundle created: .\release\dsh-sandbox-escalation-fix-0.1.1-rc2-release.zip'
+Write-Output 'Release bundle created: .\release\dsh-sandbox-escalation-fix-0.1.1-desktop.1-release.zip'
 exit $LASTEXITCODE

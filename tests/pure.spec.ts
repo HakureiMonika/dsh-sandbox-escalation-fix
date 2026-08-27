@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { normalizeEscalationArguments } from '../src/argument-normalization.ts'
-import { validateDshVersionSet, validateTargetTool } from '../src/compatibility.ts'
+import { validateDshRuntime, validateDshVersionSet, validateTargetTool } from '../src/compatibility.ts'
 import { projectEscalationDescription } from '../src/description-projection.ts'
 import { viableEscalationTargets } from '../src/policy.ts'
 import { removeEscalationHint } from '../src/result-filter.ts'
@@ -94,6 +94,36 @@ describe('execution compatibility', () => {
       .toThrow(/mixed DSH package versions/)
     expect(() => validateDshVersionSet({ tools: '0.1.0-rc.9' }))
       .toThrow(/unsupported DSH version/)
+  })
+
+  it('falls back only when every DSH package manifest is hidden', () => {
+    const hidden = Object.assign(new Error('hidden by host'), { code: 'MODULE_NOT_FOUND' })
+    expect(validateDshRuntime(() => { throw hidden })).toEqual({
+      mode: 'structural',
+      unavailablePackages: [
+        '@deepseek-ai/dsh-agent',
+        '@deepseek-ai/dsh-llm',
+        '@deepseek-ai/dsh-sandbox',
+        '@deepseek-ai/dsh-sandbox-policy',
+        '@deepseek-ai/dsh-scope',
+        '@deepseek-ai/dsh-session',
+        '@deepseek-ai/dsh-tools',
+        '@deepseek-ai/dsh-user-approval',
+      ],
+    })
+
+    expect(() => validateDshRuntime(name => {
+      if (name === '@deepseek-ai/dsh-agent') throw hidden
+      return { version: '0.1.1-rc.2' }
+    })).toThrow(/only some DSH package manifests are readable/)
+  })
+
+  it('does not hide malformed manifests or unrelated loader errors', () => {
+    expect(() => validateDshRuntime(() => ({})))
+      .toThrow(/package.json has no string version/)
+    expect(() => validateDshRuntime(() => {
+      throw Object.assign(new Error('permission denied'), { code: 'EACCES' })
+    })).toThrow(/cannot read @deepseek-ai\/dsh-agent\/package.json/)
   })
 })
 

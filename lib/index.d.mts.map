@@ -1,1 +1,1 @@
-{"version":3,"file":"index.d.mts","names":[],"sources":["../src/index.ts"],"mappings":";;;UAQiB;EACf;;cAGW,QAAQ,EAAE;cAIV;cACA;iBAEG,MAAM,KAAK,SAAS,SAAQ"}
+{"version":3,"file":"index.d.mts","names":[],"sources":["../src/compatibility.ts","../src/index.ts"],"mappings":";;;;UAoBiB;EACf;EACA;;;;UCbe;EACf;;cAGW,QAAQ,EAAE;cAIV;cACA;iBAEG,YACd,KAAK,SACL,SAAQ,QACR,gBAAe;iBAYD,MAAM,KAAK,SAAS,SAAQ"}

@@ -1,4 +1,4 @@
-# dsh-sandbox-escalation-fix（已支持 DSH 0.1.1-rc.2）
+# dsh-sandbox-escalation-fix（已支持 DSH Desktop 2.0.3）
 
 [English](README.md) | 中文
 
@@ -9,6 +9,8 @@
 > DSH `0.1.0-rc8`、`0.1.1-rc.1` 和 `0.1.1-rc.2` 已通过 `approval=never` 的运行时提示对错误升级问题做了部分改善，但仍使用相同的静态升级 Schema 和执行期校验。**建议这些版本的用户先观察原生行为，仅在实际遇到本文所列的同模式升级、空 justification 或反复重试问题后再安装本插件。**
 
 DSH `0.1.1-rc.2` 的官方更新集中在图像处理：DeepSeek 适配器优先使用 Files API 上传图像、复用已上传文件，并根据模型要求自动缩放和转换图像格式。与本插件相关的 Sandbox 升级、Bash、Pwsh、ToolRuntime 和审批实现均与 `0.1.1-rc.1` 相同，因此 rc.2 没有修复本文问题，也不需要调整插件核心逻辑。
+
+插件 `0.1.1-desktop.1` 增加了对 DSH Desktop `2.0.3` 的兼容。Desktop 2.0.3 会把 CommonJS 包清单覆盖解析限制在 Profile 的直接锚点，因此第三方插件自身无法读取宿主的 `@deepseek-ai/dsh-*/package.json`。当所有受检清单都被宿主统一隐藏时，本插件改用现有的严格运行时工具契约校验；部分清单可读、版本混装、清单损坏或工具定义不兼容时仍会拒绝运行。
 
 **dsh-sandbox-escalation-fix** 是一个零配置兼容插件，直接解决 GPT 等第三方模型在 DSH All Access 下调用 `bash`、`pwsh`、`write`、`edit` 等工具时，因为错误的沙箱升级参数提示而调用失败、反复重试的问题。
 
@@ -191,10 +193,10 @@ dsh --profile <profile>
 
 ## Release 一键安装与卸载
 
-`0.1.1-rc1` Release 包通过 DSH CLI 管理插件，不需要手动编辑 Profile Patch。原有 `v0.1.2` Release 保留，继续提供给 DSH rc8 用户。新版 Release ZIP 解压后包含以下四个文件：
+`0.1.1-desktop.1` Release 包通过 DSH CLI 管理插件，不需要手动编辑 Profile Patch。原有 `v0.1.2`、`v0.1.1-rc1` 和 `v0.1.1-rc2` Release 均保留。新版 Release ZIP 解压后包含以下四个文件：
 
 ```text
-dsh-sandbox-escalation-fix-0.1.1-rc1.tgz
+dsh-sandbox-escalation-fix-0.1.1-desktop.1.tgz
 install-release.ps1
 uninstall-release.ps1
 RELEASE-USAGE.zh.md
@@ -258,7 +260,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\uninstall-release.ps1" -P
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
 ```
 
-该脚本会先构建 `lib`，再执行 `npm pack` 生成 `.tgz`，最后在 `release` 目录生成 `dsh-sandbox-escalation-fix-0.1.1-rc1-release.zip`。ZIP 内含 tarball、两个一键脚本和简明中文使用说明；上传 GitHub Release 时只需上传该 ZIP。
+该脚本会先构建 `lib`，再执行 `npm pack` 生成 `.tgz`，最后在 `release` 目录生成 `dsh-sandbox-escalation-fix-0.1.1-desktop.1-release.zip`。ZIP 内含 tarball、两个一键脚本和简明中文使用说明；上传 GitHub Release 时只需上传该 ZIP。
 
 ## 升级插件
 
