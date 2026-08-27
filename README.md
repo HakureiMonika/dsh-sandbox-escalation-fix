@@ -12,6 +12,8 @@ DSH `0.1.1-rc.2` focuses on image handling: the DeepSeek adapter prefers Files A
 
 Plugin `0.1.1-desktop.1` adds compatibility with DSH Desktop `2.0.3`. Desktop 2.0.3 deliberately limits its CommonJS package-manifest overlay to direct Profile anchors, so a third-party plugin cannot read host `@deepseek-ai/dsh-*/package.json` files from its own module. When all checked manifests are hidden uniformly, this plugin now uses its existing strict runtime tool-contract validation instead. Partially readable manifests, mixed versions, malformed manifests, and incompatible tool definitions still fail closed.
 
+Linked and external plugin layouts are also supported. If `link:`, a workspace symlink, or an external plugin directory places the plugin outside the host dependency tree, the compatibility gate may read the complete DSH manifest set from the host working directory. One candidate root must provide the entire checked package set: partial roots, cross-root package mixing, malformed manifests, and non-resolution loader errors still fail closed. `DSH_HOME` is not treated as a dependency root because it stores Harness configuration and Profile data rather than a stable Node.js package tree.
+
 **dsh-sandbox-escalation-fix** is a zero-configuration compatibility plugin that directly resolves the issue of third-party models like GPT failing to call tools such as `bash`, `pwsh`, `write`, and `edit` under DSH All Access, resulting in repeated retries due to incorrect sandbox escalation parameter prompts.
 
 If you've encountered the following errors, this plugin is designed for them:

@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module'
+import { join } from 'node:path'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 
 // 仅列入已使用对应真实 DSH 包完成构建和集成测试的版本，避免仅凭 semver 范围放行未知契约。
@@ -16,11 +17,46 @@ const DSH_PACKAGES = [
 ] as const
 const TARGET_NAMES = new Set(['bash', 'pwsh', 'write', 'edit'])
 const ESCALATION_FIELDS = ['sandbox_permissions', 'justification'] as const
-const require = createRequire(import.meta.url)
+
+type ManifestReader = (name: string) => unknown
+
+interface ManifestSource {
+  readonly label: string
+  readonly read: ManifestReader
+}
 
 export interface DshRuntimeCompatibility {
   mode: 'versioned' | 'structural'
   unavailablePackages: readonly string[]
+}
+
+function isMissingModuleError(error: unknown): boolean {
+  const code = (error as NodeJS.ErrnoException | null)?.code
+  return code === 'MODULE_NOT_FOUND' || code === 'ERR_MODULE_NOT_FOUND'
+}
+
+/**
+ * 按 Node.js 的真实加载优先级建立包清单解析根。
+ *
+ * 插件自身目录必须优先，因为运行时代码中的静态 import 也会先从插件物理位置向上解析；
+ * 只有该目录完全不存在任何受检 DSH 包时，才允许从宿主当前工作目录读取完整包集，
+ * 从而兼容 `link:`、工作区软链接和从 DSH 源码根目录启动的开发方式。
+ * `DSH_HOME` 是配置与 Profile 数据目录，不是稳定的 Node.js 包根目录，因此不能参与解析。
+ */
+function defaultManifestSources(): readonly ManifestSource[] {
+  const pluginRequire = createRequire(import.meta.url)
+  const hostRequire = createRequire(join(process.cwd(), 'package.json'))
+
+  return [
+    {
+      label: 'plugin module',
+      read: name => pluginRequire(`${name}/package.json`),
+    },
+    {
+      label: 'host working directory',
+      read: name => hostRequire(`${name}/package.json`),
+    },
+  ]
 }
 
 export function validateDshVersionSet(
@@ -39,37 +75,54 @@ export function validateDshVersionSet(
   }
 }
 
-export function validateDshRuntime(
-  readManifest: (name: string) => unknown = name => require(`${name}/package.json`),
+export function validateDshRuntimeFromSources(
+  sources: readonly ManifestSource[],
 ): DshRuntimeCompatibility {
-  const versions: Record<string, string> = {}
-  const unavailablePackages: string[] = []
-  for (const name of DSH_PACKAGES) {
-    let manifest: unknown
-    try {
-      manifest = readManifest(name)
-    } catch (error) {
-      const code = (error as NodeJS.ErrnoException | null)?.code
-      if (code === 'MODULE_NOT_FOUND' || code === 'ERR_MODULE_NOT_FOUND') {
-        unavailablePackages.push(name)
-        continue
+  for (const source of sources) {
+    const versions: Record<string, string> = {}
+    const unavailablePackages: string[] = []
+
+    for (const name of DSH_PACKAGES) {
+      let manifest: unknown
+      try {
+        manifest = source.read(name)
+      } catch (error) {
+        if (isMissingModuleError(error)) {
+          unavailablePackages.push(name)
+          continue
+        }
+        throw new Error(`dsh-sandbox-escalation-fix: cannot read ${name}/package.json from ${source.label}`, { cause: error })
       }
-      throw new Error(`dsh-sandbox-escalation-fix: cannot read ${name}/package.json`, { cause: error })
+      if (typeof manifest !== 'object' || manifest === null
+        || !('version' in manifest) || typeof manifest.version !== 'string') {
+        throw new Error(`dsh-sandbox-escalation-fix: ${name}/package.json has no string version at ${source.label}`)
+      }
+      versions[name] = manifest.version
     }
-    if (typeof manifest !== 'object' || manifest === null
-      || !('version' in manifest) || typeof manifest.version !== 'string') {
-      throw new Error(`dsh-sandbox-escalation-fix: ${name}/package.json has no string version`)
+
+    if (unavailablePackages.length === 0) {
+      validateDshVersionSet(versions)
+      return { mode: 'versioned', unavailablePackages }
     }
-    versions[name] = manifest.version
+
+    // 同一解析根只出现部分 DSH 包，说明静态 import 可能已经从该根加载了部分运行时。
+    // 此时继续尝试后续根会掩盖双运行时或跨目录混装，因此必须立即拒绝启动。
+    if (unavailablePackages.length < DSH_PACKAGES.length) {
+      throw new Error(`dsh-sandbox-escalation-fix: only some DSH package manifests are readable from ${source.label}; unavailable packages: ${unavailablePackages.join(', ')}`)
+    }
   }
-  if (unavailablePackages.length === DSH_PACKAGES.length) {
-    return { mode: 'structural', unavailablePackages }
-  }
-  if (unavailablePackages.length > 0) {
-    throw new Error(`dsh-sandbox-escalation-fix: only some DSH package manifests are readable; unavailable packages: ${unavailablePackages.join(', ')}`)
-  }
-  validateDshVersionSet(versions)
-  return { mode: 'versioned', unavailablePackages }
+
+  // 所有候选根都完全看不到清单时，保留 Desktop 2.0.3 所需的严格结构校验回退。
+  return { mode: 'structural', unavailablePackages: [...DSH_PACKAGES] }
+}
+
+export function validateDshRuntime(
+  readManifest?: ManifestReader,
+): DshRuntimeCompatibility {
+  const sources = readManifest === undefined
+    ? defaultManifestSources()
+    : [{ label: 'injected manifest reader', read: readManifest }]
+  return validateDshRuntimeFromSources(sources)
 }
 
 function record(value: unknown, label: string): Record<string, unknown> {

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { normalizeEscalationArguments } from '../src/argument-normalization.ts'
-import { validateDshRuntime, validateDshVersionSet, validateTargetTool } from '../src/compatibility.ts'
+import {
+  validateDshRuntime,
+  validateDshRuntimeFromSources,
+  validateDshVersionSet,
+  validateTargetTool,
+} from '../src/compatibility.ts'
 import { projectEscalationDescription } from '../src/description-projection.ts'
 import { viableEscalationTargets } from '../src/policy.ts'
 import { removeEscalationHint } from '../src/result-filter.ts'
@@ -124,6 +129,76 @@ describe('execution compatibility', () => {
     expect(() => validateDshRuntime(() => {
       throw Object.assign(new Error('permission denied'), { code: 'EACCES' })
     })).toThrow(/cannot read @deepseek-ai\/dsh-agent\/package.json/)
+  })
+
+  it('uses one complete fallback root for linked plugin installations', () => {
+    const hidden = Object.assign(new Error('not installed beside plugin'), { code: 'MODULE_NOT_FOUND' })
+    expect(validateDshRuntimeFromSources([
+      {
+        label: 'plugin module',
+        read: () => { throw hidden },
+      },
+      {
+        label: 'host working directory',
+        read: () => ({ version: '0.1.1-rc.2' }),
+      },
+    ])).toEqual({
+      mode: 'versioned',
+      unavailablePackages: [],
+    })
+  })
+
+  it('does not combine partial package sets from different roots', () => {
+    const hidden = Object.assign(new Error('not installed at this root'), { code: 'MODULE_NOT_FOUND' })
+    expect(() => validateDshRuntimeFromSources([
+      {
+        label: 'first root',
+        read: name => {
+          if (name === '@deepseek-ai/dsh-agent') return { version: '0.1.1-rc.2' }
+          throw hidden
+        },
+      },
+      {
+        label: 'second root',
+        read: name => {
+          if (name !== '@deepseek-ai/dsh-agent') return { version: '0.1.1-rc.2' }
+          throw hidden
+        },
+      },
+    ])).toThrow(/only some DSH package manifests are readable from first root/)
+  })
+
+  it('rejects a partial higher-priority root even when a later root is complete', () => {
+    const hidden = Object.assign(new Error('not installed at this root'), { code: 'MODULE_NOT_FOUND' })
+    expect(() => validateDshRuntimeFromSources([
+      {
+        label: 'plugin module',
+        read: name => {
+          if (name === '@deepseek-ai/dsh-agent') return { version: '0.1.1-rc.2' }
+          throw hidden
+        },
+      },
+      {
+        label: 'host working directory',
+        read: () => ({ version: '0.1.1-rc.2' }),
+      },
+    ])).toThrow(/only some DSH package manifests are readable from plugin module/)
+  })
+
+  it('fails immediately when a fallback root reports a non-resolution error', () => {
+    const hidden = Object.assign(new Error('not installed beside plugin'), { code: 'MODULE_NOT_FOUND' })
+    expect(() => validateDshRuntimeFromSources([
+      {
+        label: 'plugin module',
+        read: () => { throw hidden },
+      },
+      {
+        label: 'host working directory',
+        read: () => {
+          throw Object.assign(new Error('permission denied'), { code: 'EACCES' })
+        },
+      },
+    ])).toThrow(/cannot read @deepseek-ai\/dsh-agent\/package.json from host working directory/)
   })
 })
 
