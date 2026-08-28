@@ -1,4 +1,4 @@
-# dsh-sandbox-escalation-fix (DSH Desktop 2.0.3 is now supported)
+# dsh-sandbox-escalation-fix (DSH 0.1.2-alpha.1 and Desktop 2.0.3 supported)
 
 English | [简体中文](README.zh.md)
 
@@ -6,9 +6,13 @@ English | [简体中文](README.zh.md)
 > This is an independent community plugin. It is not published, maintained, or endorsed by DeepSeek, and it does not modify DeepSeek Harness core packages.
 
 > [!CAUTION]
-> DSH `0.1.0-rc8`, `0.1.1-rc.1`, and `0.1.1-rc.2` partially improve this issue through an `approval=never` runtime instruction, but still use the same static escalation schema and execution-time validation. **Users of these versions should first observe the built-in behavior and install this plugin only after reproducing the same-mode escalation, blank justification, or retry-loop failures described below.**
+> DSH `0.1.0-rc8`, `0.1.1-rc.1`, `0.1.1-rc.2`, and `0.1.2-alpha.1` partially improve this issue, but still use registry-global escalation schemas and execution-time validation. **Users should first observe the built-in behavior and install this plugin only after reproducing the same-mode escalation, blank justification, or retry-loop failures described below.**
 
 DSH `0.1.1-rc.2` focuses on image handling: the DeepSeek adapter prefers Files API uploads, reuses uploaded files, and automatically resizes or converts images for model requirements. The sandbox escalation, Bash, Pwsh, ToolRuntime, and approval implementations used by this plugin are unchanged from `0.1.1-rc.1`, so rc.2 neither fixes the issue described here nor requires a plugin logic change.
+
+DSH `0.1.2-alpha.1` improves composition-level advertising: Bash, Pwsh, Write, and Edit omit escalation fields when no confining sandbox backend is mounted. It does not implement session-aware schema projection. With a sandbox backend mounted, the tools still register both `workspace-write` and `danger-full-access` globally; the current Session mode is resolved only during execution, strict widening remains an execution-time check, and `approval=never` adds a model instruction without removing the fields. Native tool calling and PTC Mode both consume the same registered definition. The issue addressed by this plugin therefore remains possible.
+
+Compatibility with `0.1.2-alpha.1` was audited against the official tag source at commit `cd5ef8148158c3a752a658978873241fdf8e2bbc`. The core alpha.1 packages were not yet available from the public npm registry during verification, so this release uses tag-source contract review and alpha.1 tool-shape regression tests rather than claiming an unavailable npm-package test.
 
 Plugin `0.1.1-desktop.2` includes compatibility with DSH Desktop `2.0.3`. Desktop 2.0.3 deliberately limits its CommonJS package-manifest overlay to direct Profile anchors, so a third-party plugin cannot read host `@deepseek-ai/dsh-*/package.json` files from its own module. When all checked manifests are hidden uniformly, this plugin uses its existing strict runtime tool-contract validation instead. Partially readable manifests, mixed versions, malformed manifests, and incompatible tool definitions still fail closed.
 
@@ -64,7 +68,7 @@ This plugin projects the model-visible tool schema per session, based on the liv
 - In `workspace-write` sessions, models see two escalation targets even though only `danger-full-access` is genuinely wider.
 - With `approval=never`, models are still told escalation is possible when every request will be rejected.
 - Tool descriptions and denial results keep saying ?escalation available,? which pushes the model to retry.
-- Native Tool Call and Code Mode SDK can show inconsistent capability surfaces.
+- Native Tool Call and PTC Mode SDK (formerly Code Mode) can show inconsistent capability surfaces.
 
 ### Why It Happens
 
@@ -103,12 +107,12 @@ This plugin projects the model-visible schema from the session's real permission
 
 When the model cannot see a parameter that cannot succeed, it stops reaching for it.
 
-### It won't fix Native Tool Call but leave Code Mode broken
+### It won't fix Native Tool Call but leave PTC Mode broken
 
-Projection happens on the tool definition inside each Agent Exact Scope, so Native tool schemas and the Code Mode SDK read the same result:
+Projection happens on the tool definition inside each Agent Exact Scope, so Native tool schemas and the PTC Mode SDK read the same result:
 
 - Native tool schemas omit impossible escalation fields;
-- Code Mode TypeScript/Python SDKs omit them too;
+- PTC Mode TypeScript/Python SDKs omit them too;
 - behavior stays identical across both modes.
 
 ### It won't silently swallow a downgrade request
@@ -132,7 +136,7 @@ For genuine escalation requests, the plugin does not fill in a fake or placehold
 When the session has no viable escalation target, the plugin also cleans up the natural-language side:
 
 - the escalation guidance tail is removed from Shell tool descriptions;
-- impossible `escalation available` hints are removed from Shell, filesystem, Code Mode, and `job_output` results.
+- impossible `escalation available` hints are removed from Shell, filesystem, PTC Mode, and `job_output` results.
 
 The model no longer receives contradictory instructions from the parameter schema, the description, and the failure output.
 
@@ -162,28 +166,28 @@ The plugin listens to Agent creation, disposal, Preset changes, restrictions, an
 
 ### It won't lock you to a single DSH release
 
-The plugin supports DSH `0.1.0-rc.5`, `0.1.0-rc.6`, `0.1.0-rc.7`, `0.1.0-rc.8`, `0.1.1-rc.1`, and `0.1.1-rc.2`. At startup it verifies that the installed `@deepseek-ai/dsh-*` packages are consistent and supported. Incompatible tool definitions fail explicitly instead of producing silent misbehavior.
+The plugin supports DSH `0.1.0-rc.5`, `0.1.0-rc.6`, `0.1.0-rc.7`, `0.1.0-rc.8`, `0.1.1-rc.1`, `0.1.1-rc.2`, and `0.1.2-alpha.1`. At startup it verifies that the installed `@deepseek-ai/dsh-*` packages are consistent and supported. Incompatible tool definitions fail explicitly instead of producing silent misbehavior.
 
 ### It won't add configuration burden
 
-Zero configuration. Install it into the Profile you actually use and start DSH as before. The test suite contains 28 tests built on real DSH packages, covering schema projection, Code Mode SDK generation, dynamic restrictions, multi-Agent isolation, delegate and wrapper-protocol replacement, internal timeout-budget forwarding, failure-hint cleanup, and unload behavior.
+Zero configuration. Install it into the Profile you actually use and start DSH as before. The test suite contains 36 tests, including runtime integration on the latest publicly available rc.2 packages and alpha.1 source-contract regression coverage for PTC Mode metadata, schema projection, dynamic restrictions, multi-Agent isolation, delegate and wrapper-protocol replacement, internal timeout-budget forwarding, failure-hint cleanup, and unload behavior.
 
 ## This Plugin vs. Execution-Only Normalization
 
 | Capability | This plugin | Execution-only normalization |
 |---|---|---|
 | Hide impossible escalation fields from Native tools | yes, per session | no |
-| Hide the same fields from the Code Mode SDK | yes, from the same exact-scope definition | no |
+| Hide the same fields from the PTC Mode SDK | yes, from the same exact-scope definition | no |
 | Remove only an exact same-mode redundant request | yes | implementation-dependent |
 | Preserve explicit downgrade and invalid requests for DSH validation | yes | not guaranteed |
 | Preserve missing or blank `justification` for DSH validation | yes | not guaranteed |
-| Remove impossible advice from descriptions and results | Shell, FS, Code Mode, and `job_output` | no |
+| Remove impossible advice from descriptions and results | Shell, FS, PTC Mode, and `job_output` | no |
 | React to Agent, Preset, and tool lifecycle changes | yes | implementation-dependent |
 
 ## Compatibility
 
 - Node.js `^22.19.0` or `>=24.0.0`
-- `@deepseek-ai/dsh-*` `0.1.0-rc.5`, `0.1.0-rc.6`, `0.1.0-rc.7`, `0.1.0-rc.8`, `0.1.1-rc.1`, or `0.1.1-rc.2`
+- `@deepseek-ai/dsh-*` `0.1.0-rc.5`, `0.1.0-rc.6`, `0.1.0-rc.7`, `0.1.0-rc.8`, `0.1.1-rc.1`, `0.1.1-rc.2`, or `0.1.2-alpha.1`
 - `@deepseek-ai/cordis` `4.0.1`
 
 The plugin checks the installed DSH package versions at startup. Mixed rc.5/rc.6/rc.7/rc.8/0.1.1-rc.1 installations and unknown DSH versions fail explicitly. An initially visible target with partial escalation fields or an incompatible output definition rejects that Agent's registration; a target that omits both escalation fields is accepted as already safe. During runtime, a Preset restriction or stable provider removal makes the wrapper dormant, while an incompatible replacement is isolated to that Agent and target tool and reported without terminating the Host process. A later compatible definition is wrapped automatically.
@@ -200,9 +204,9 @@ You do not need to change the model configuration, Sandbox Mode, Approval Policy
 
 ## Release One-Click Install and Uninstall
 
-The `0.1.1-desktop.2` Release includes both Desktop 2.0.3 compatibility and the linked/external plugin resolution enhancement from PR #5. It uses the DSH CLI, so no manual Profile patch editing is required. Download and extract `dsh-sandbox-escalation-fix-0.1.1-desktop.2-release.zip`; it contains the tarball, one-click install and uninstall scripts, and a concise Chinese usage guide. The earlier `v0.1.1-desktop.1`, `v0.1.2`, `v0.1.1-rc1`, and `v0.1.1-rc2` Releases remain available.
+The `0.1.2-alpha1` Release adds DSH `0.1.2-alpha.1` support while retaining Desktop 2.0.3 compatibility and the linked/external plugin resolution enhancement from PR #5. It uses the DSH CLI, so no manual Profile patch editing is required. Download and extract `dsh-sandbox-escalation-fix-0.1.2-alpha1-release.zip`; it contains the tarball, one-click install and uninstall scripts, and a concise Chinese usage guide. Earlier Releases, including `v0.1.1-desktop.2`, remain available.
 
-Close DSH before installing or removing the plugin. Ensure that `dsh` is available on PATH and that the running DSH version is rc5, rc6, rc7, rc8, `0.1.1-rc.1`, or `0.1.1-rc.2`. Users should install only after reproducing the affected behavior.
+Close DSH before installing or removing the plugin. Ensure that `dsh` is available on PATH and that the running DSH version is rc5, rc6, rc7, rc8, `0.1.1-rc.1`, `0.1.1-rc.2`, or `0.1.2-alpha.1`. Users should install only after reproducing the affected behavior.
 
 ### Install into the default Web Profile
 
@@ -235,7 +239,7 @@ The removal script runs `dsh plugin --profile web remove dsh-sandbox-escalation-
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
 ```
 
-The script builds `lib`, packages the npm tarball, then creates `dsh-sandbox-escalation-fix-0.1.1-desktop.2-release.zip` in `release/`. The generated directory is ignored by Git; upload only this ZIP as the GitHub Release asset.
+The script builds `lib`, packages the npm tarball, then creates `dsh-sandbox-escalation-fix-0.1.2-alpha1-release.zip` in `release/`. The generated directory is ignored by Git; upload only this ZIP as the GitHub Release asset.
 
 ## Upgrade
 

@@ -81,4 +81,33 @@ describe('wrapper chain', () => {
 
     expect(binding.definition.timeoutMs).toBe(30_000)
   })
+
+  it('forwards DSH alpha.1 tool metadata through the current delegate', () => {
+    const first = tool([])
+    first.timeoutMs = 10_000
+    first.isConcurrencySafe = () => false
+    first.presentCall = () => ({ card: 'generic', title: 'first' })
+    first.presentResult = () => ({ card: 'generic', content: [] })
+    first.finalizeContent = () => [{ type: 'text', text: 'first' }]
+    const binding = createWrapperBinding(first, {
+      owner: 'owner',
+      priority: 10,
+    })
+    const replacement = tool([])
+    replacement.timeoutMs = 20_000
+    replacement.isConcurrencySafe = () => true
+    replacement.presentCall = () => ({ card: 'generic', title: 'replacement' })
+    replacement.presentResult = () => ({ card: 'generic', content: [{ type: 'text', text: 'replacement' }] })
+    replacement.finalizeContent = () => [{ type: 'text', text: 'replacement' }]
+
+    binding.updateDelegate(replacement)
+
+    expect(binding.definition.timeoutMs).toBe(20_000)
+    expect(binding.definition.isConcurrencySafe?.({})).toBe(true)
+    expect(binding.definition.presentCall?.({})).toEqual({ card: 'generic', title: 'replacement' })
+    expect(binding.definition.presentResult?.({}, { content: [], isError: false }))
+      .toEqual({ card: 'generic', content: [{ type: 'text', text: 'replacement' }] })
+    expect(binding.definition.finalizeContent?.({} as never, {} as never))
+      .toEqual([{ type: 'text', text: 'replacement' }])
+  })
 })

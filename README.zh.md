@@ -1,4 +1,4 @@
-# dsh-sandbox-escalation-fix（已支持 DSH Desktop 2.0.3）
+# dsh-sandbox-escalation-fix（已支持 DSH 0.1.2-alpha.1 与 Desktop 2.0.3）
 
 [English](README.md) | 中文
 
@@ -6,9 +6,13 @@
 > 这是独立开发的社区插件，不是 DeepSeek 官方发布、维护或背书的插件。它不会修改 DeepSeek Harness 的核心代码。
 
 > [!CAUTION]
-> DSH `0.1.0-rc8`、`0.1.1-rc.1` 和 `0.1.1-rc.2` 已通过 `approval=never` 的运行时提示对错误升级问题做了部分改善，但仍使用相同的静态升级 Schema 和执行期校验。**建议这些版本的用户先观察原生行为，仅在实际遇到本文所列的同模式升级、空 justification 或反复重试问题后再安装本插件。**
+> DSH `0.1.0-rc8`、`0.1.1-rc.1`、`0.1.1-rc.2` 和 `0.1.2-alpha.1` 已做部分改善，但仍使用注册表全局升级 Schema 和执行期校验。**建议用户先观察原生行为，仅在实际遇到本文所列的同模式升级、空 justification 或反复重试问题后再安装本插件。**
 
 DSH `0.1.1-rc.2` 的官方更新集中在图像处理：DeepSeek 适配器优先使用 Files API 上传图像、复用已上传文件，并根据模型要求自动缩放和转换图像格式。与本插件相关的 Sandbox 升级、Bash、Pwsh、ToolRuntime 和审批实现均与 `0.1.1-rc.1` 相同，因此 rc.2 没有修复本文问题，也不需要调整插件核心逻辑。
+
+DSH `0.1.2-alpha.1` 改善了部署组合级广告：没有受限沙箱后端时，Bash、Pwsh、Write、Edit 不再公开升级字段。但它没有实现按 Session 投影 Schema。有沙箱后端时，工具仍会全局注册 `workspace-write` 和 `danger-full-access`；当前 Session 模式只在执行期读取，严格变宽仍在执行期校验，`approval=never` 只增加模型提示而不会删除字段。Native Tool Call 和 PTC Mode 又使用同一注册定义，因此本插件针对的问题仍可能出现。
+
+本次兼容基于官方标签提交 `cd5ef8148158c3a752a658978873241fdf8e2bbc` 的源码契约审计。验证时 alpha.1 核心包尚未发布到公共 npm，因此本 Release 使用标签源码契约核对和 alpha.1 工具形状回归测试，不会把尚无法执行的 npm 包级测试描述为已完成。
 
 插件 `0.1.1-desktop.2` 包含对 DSH Desktop `2.0.3` 的兼容。Desktop 2.0.3 会把 CommonJS 包清单覆盖解析限制在 Profile 的直接锚点，因此第三方插件自身无法读取宿主的 `@deepseek-ai/dsh-*/package.json`。当所有受检清单都被宿主统一隐藏时，本插件改用现有的严格运行时工具契约校验；部分清单可读、版本混装、清单损坏或工具定义不兼容时仍会拒绝运行。
 
@@ -65,7 +69,7 @@ Error: sandbox escalation to "workspace-write" is not strictly wider than this c
 - 模型在 `workspace-write` 下看到两个升级目标，但其实只有 `danger-full-access` 是真正更宽的选项。
 - 模型在 `approval=never` 下仍然被提示“可以升级”，但所有升级都会被拒绝。
 - 工具描述和错误结果里继续出现“升级可用”的提示，诱导模型反复重试。
-- Native Tool Call 和 Code Mode SDK 展示不一致，一边修好了、另一边还在误导模型。
+- Native Tool Call 和 PTC Mode SDK（旧称 Code Mode）展示不一致，一边修好了、另一边还在误导模型。
 
 ### 问题成因
 
@@ -104,12 +108,12 @@ DSH 工具注册时会公开静态的升级字段，但真正可以请求的升�
 
 模型看不到当前不可能成功的参数，自然就不会去使用它。
 
-### 它不会只修 Native Tool Call，而漏掉 Code Mode
+### 它不会只修 Native Tool Call，而漏掉 PTC Mode
 
-插件的参数投影发生在 Agent 精确作用域的工具定义上。原生工具调用和 Code Mode SDK 读取的是同一份投影结果：
+插件的参数投影发生在 Agent 精确作用域的工具定义上。原生工具调用和 PTC Mode SDK 读取的是同一份投影结果：
 
 - 原生工具 Schema 里不会出现无效升级字段；
-- Code Mode 生成的 TypeScript/Python SDK 里同样不会出现；
+- PTC Mode 生成的 TypeScript/Python SDK 里同样不会出现；
 - 两种模式的行为始终一致。
 
 不会出现“原生调用已经修好，模型走 `run_code` 仍然看到并误用旧参数”的半成品状态。
@@ -165,22 +169,22 @@ Session B = danger-full-access + never   → 看不到升级字段
 
 ### 它不会只支持单一 DSH 版本
 
-插件同时支持 DSH `0.1.0-rc.5`、`0.1.0-rc.6`、`0.1.0-rc.7`、`0.1.0-rc.8`、`0.1.1-rc.1` 和 `0.1.1-rc.2`，并在加载时校验 DSH 各包版本是否一致且受支持。遇到不兼容的工具定义会主动拒绝安装，而不是在运行中产生难以排查的诡异行为。
+插件同时支持 DSH `0.1.0-rc.5`、`0.1.0-rc.6`、`0.1.0-rc.7`、`0.1.0-rc.8`、`0.1.1-rc.1`、`0.1.1-rc.2` 和 `0.1.2-alpha.1`，并在加载时校验 DSH 各包版本是否一致且受支持。遇到不兼容的工具定义会主动拒绝安装，而不是在运行中产生难以排查的诡异行为。
 
 ### 它不会给你增加配置负担
 
-零配置，安装到实际使用的 Profile 后即可生效。测试覆盖 28 项，包含真实 DSH 包的集成验证，覆盖 Schema 投影、Code Mode SDK、动态限制、多 Agent 隔离、Delegate 与协作包装器替换、内部超时预算透传、失败提示清理和插件卸载等关键路径。
+零配置，安装到实际使用的 Profile 后即可生效。测试覆盖 36 项，包含当前公共 npm 可获得的 rc.2 真实包运行时集成验证，以及 alpha.1 标签源码契约和 PTC Mode 元数据回归验证，覆盖 Schema 投影、动态限制、多 Agent 隔离、Delegate 与协作包装器替换、内部超时预算透传、失败提示清理和插件卸载等关键路径。
 
 ## 与其他“仅执行期止血”方案的区别
 
 | 能力 | 本插件 | 仅执行期参数正规化 |
 |---|---|---|
 | 从 Native Tool Schema 隐藏不可执行升级字段 | 支持，按 Session 动态投影 | 不支持 |
-| 从 Code Mode SDK 隐藏相同字段 | 支持，与 Native 读取同一 Agent Exact Scope 定义 | 不支持 |
+| 从 PTC Mode SDK 隐藏相同字段 | 支持，与 Native 读取同一 Agent Exact Scope 定义 | 不支持 |
 | 只删除精确同模式的冗余请求 | 支持 | 取决于实现 |
 | 保留显式降级和非法请求给 DSH 校验 | 支持 | 不保证 |
 | 保留缺失或空白 `justification` 给 DSH 校验 | 支持 | 不保证 |
-| 清理描述与结果中的无效升级建议 | 覆盖 Shell、FS、Code Mode、`job_output` | 不支持 |
+| 清理描述与结果中的无效升级建议 | 覆盖 Shell、FS、PTC Mode、`job_output` | 不支持 |
 | 响应 Agent、Preset 和工具生命周期变化 | 支持 | 取决于实现 |
 
 ## 快速使用
@@ -195,16 +199,16 @@ dsh --profile <profile>
 
 ## Release 一键安装与卸载
 
-`0.1.1-desktop.2` Release 同时包含 Desktop 2.0.3 兼容和 PR #5 的软链接/外部插件目录解析增强，并通过 DSH CLI 管理插件，不需要手动编辑 Profile Patch。原有 `v0.1.1-desktop.1`、`v0.1.2`、`v0.1.1-rc1` 和 `v0.1.1-rc2` Release 均保留。新版 Release ZIP 解压后包含以下四个文件：
+`0.1.2-alpha1` Release 新增 DSH `0.1.2-alpha.1` 支持，同时保留 Desktop 2.0.3 兼容和 PR #5 的软链接/外部插件目录解析增强，并通过 DSH CLI 管理插件，不需要手动编辑 Profile Patch。包括 `v0.1.1-desktop.2` 在内的旧 Release 均保留。新版 Release ZIP 解压后包含以下四个文件：
 
 ```text
-dsh-sandbox-escalation-fix-0.1.1-desktop.2.tgz
+dsh-sandbox-escalation-fix-0.1.2-alpha1.tgz
 install-release.ps1
 uninstall-release.ps1
 RELEASE-USAGE.zh.md
 ```
 
-安装或卸载前先完全关闭 DSH。双击脚本前，请确认系统已将 `dsh` 命令加入 PATH，且当前 DSH 使用的是 rc5、rc6、rc7、rc8、`0.1.1-rc.1` 或 `0.1.1-rc.2`。建议先实际复现同类错误，再决定是否安装。
+安装或卸载前先完全关闭 DSH。双击脚本前，请确认系统已将 `dsh` 命令加入 PATH，且当前 DSH 使用的是 rc5、rc6、rc7、rc8、`0.1.1-rc.1`、`0.1.1-rc.2` 或 `0.1.2-alpha.1`。建议先实际复现同类错误，再决定是否安装。
 
 ### 安装到默认 Web Profile
 
@@ -262,7 +266,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\uninstall-release.ps1" -P
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
 ```
 
-该脚本会先构建 `lib`，再执行 `npm pack` 生成 `.tgz`，最后在 `release` 目录生成 `dsh-sandbox-escalation-fix-0.1.1-desktop.2-release.zip`。ZIP 内含 tarball、两个一键脚本和简明中文使用说明；上传 GitHub Release 时只需上传该 ZIP。
+该脚本会先构建 `lib`，再执行 `npm pack` 生成 `.tgz`，最后在 `release` 目录生成 `dsh-sandbox-escalation-fix-0.1.2-alpha1-release.zip`。ZIP 内含 tarball、两个一键脚本和简明中文使用说明；上传 GitHub Release 时只需上传该 ZIP。
 
 ## 升级插件
 
@@ -598,13 +602,13 @@ dsh web: http://127.0.0.1:3080
 - [ ] `read-only` + `ask`：读取正常；写入操作仍按 DSH 原策略请求 `workspace-write` 或更高权限。
 - [ ] 任意 Mode + `never`：不会向模型提供无法获批的升级路径。
 
-### Preset 与 Code Mode
+### Preset 与 PTC Mode
 
 - [ ] 在可用的两个 Agent Preset 之间切换后，新建 Session，pwsh 与文件工具仍正常。
-- [ ] 使用会调用 `agent.ctx.tools.restrict()` 的动态 Preset；进入限制状态后，被限制工具立即从 Native Schema 和 Code Mode SDK 消失。
+- [ ] 使用会调用 `agent.ctx.tools.restrict()` 的动态 Preset；进入限制状态后，被限制工具立即从 Native Schema 和 PTC Mode SDK 消失。
 - [ ] 解除动态限制后，不重建 Agent 也能恢复相应工具，且恢复后的 Schema 仍按当前权限隐藏无效升级字段。
 - [ ] 两个 Agent 使用不同动态限制时，一个 Agent 隐藏工具不会影响另一个 Agent。
-- [ ] 如果使用 Code Mode，程序内调用 pwsh、读取和写入工具均正常，错误消息不包含无法执行的升级建议。
+- [ ] 如果使用 PTC Mode，程序内调用 pwsh、读取和写入工具均正常，错误消息不包含无法执行的升级建议。
 - [ ] 切回 Native Tool 模式后，工具行为保持一致。
 
 ### 冲突与稳定性
@@ -614,7 +618,7 @@ dsh web: http://127.0.0.1:3080
 - [ ] 浏览器刷新后，所有会话和工作区状态仍可恢复。
 - [ ] DSH 启动日志中没有 `has no scope key`、`installation failed` 或同名工具注册错误。
 
-全部通过后，可认为会话生命周期、OAI All Access、Native/Code Mode 和主要权限路径均已人工验收。
+全部通过后，可认为会话生命周期、OAI All Access、Native/PTC Mode 和主要权限路径均已人工验收。
 
 ## 验证证据
 
@@ -623,7 +627,7 @@ dsh web: http://127.0.0.1:3080
 - 权限矩阵；
 - 精确同模式正规化；
 - Native Schema 投影；
-- Code Mode SDK 生成；
+- PTC Mode SDK 生成；
 - 动态 Preset 限制、解除和初始受限后自动发现；
 - 多 Agent 限制隔离；
 - Delegate 替换；
@@ -692,7 +696,7 @@ dsh --profile <profile> --dump-config
 | 复制了整个开发文件夹 | 可以保留，但必须删除目标插件目录内部的 `node_modules`，并确认没有多套一层同名目录 |
 | YAML 启动报错 | 检查 `- insert:` 是否顶格、是否误加了方括号或引号，以及缩进是否只使用空格 |
 | Git 安装构建失败 | 确认 Profile 的 `pnpm-workspace.yaml` 已允许构建 `dsh-sandbox-escalation-fix`，然后重新安装 |
-| 启动时报版本错误 | 不要混装 rc.5、rc.6、rc.7、rc.8、0.1.1-rc.1 与 0.1.1-rc.2 包；让 Profile 中关键 `@deepseek-ai/dsh-*` 包保持同一版本 |
+| 启动时报版本错误 | 不要混装 rc.5、rc.6、rc.7、rc.8、0.1.1-rc.1、0.1.1-rc.2 与 0.1.2-alpha.1 包；让 Profile 中关键 `@deepseek-ai/dsh-*` 包保持同一版本 |
 | Agent 注册时报同名工具冲突 | 另一个插件已在 Agent Exact Scope 注册 `bash`、`pwsh`、`write` 或 `edit`，且未实现协作协议；只能卸载其中一个 |
 | 动态 Preset 隐藏了部分工具 | 这是正常行为；插件会镜像 `tools.restrict()`，限制解除后自动恢复包装 |
 | 日志出现动态协调警告 | 检查警告中目标工具的替换定义；其他工具和 Agent 会继续工作，兼容定义出现后自动恢复 |
@@ -701,12 +705,12 @@ dsh --profile <profile> --dump-config
 ## 支持范围
 
 - Node.js `^22.19.0` 或 `>=24.0.0`
-- `@deepseek-ai/dsh-*` `0.1.0-rc.5`、`0.1.0-rc.6`、`0.1.0-rc.7`、`0.1.0-rc.8`、`0.1.1-rc.1`、`0.1.1-rc.2`
+- `@deepseek-ai/dsh-*` `0.1.0-rc.5`、`0.1.0-rc.6`、`0.1.0-rc.7`、`0.1.0-rc.8`、`0.1.1-rc.1`、`0.1.1-rc.2`、`0.1.2-alpha.1`
 - `@deepseek-ai/cordis` `4.0.1`
 
 插件针对这些版本的公开 Scope、ToolRuntime、Sandbox Policy 与 Approval Service 契约构建。Agent 初次创建时，已可见的目标工具定义或同 Scope 包装协议不兼容会严格拒绝该 Agent 注册。
 
-启动时会读取关键 `@deepseek-ai/dsh-*` 包的实际版本；rc.5/rc.6/rc.7/rc.8/0.1.1-rc.1/0.1.1-rc.2 混装或未知版本会拒绝启动。目标工具同时省略两个升级字段时视为已经安全。运行期的 Preset 限制或 Provider 稳定删除会让包装器进入休眠；运行期替换为字段残缺或输出定义不兼容的工具时，只隔离对应 Agent 的对应工具并记录警告，不会终止 Host 进程，后续兼容定义出现时自动恢复。
+启动时会读取关键 `@deepseek-ai/dsh-*` 包的实际版本；rc.5/rc.6/rc.7/rc.8/0.1.1-rc.1/0.1.1-rc.2/0.1.2-alpha.1 混装或未知版本会拒绝启动。目标工具同时省略两个升级字段时视为已经安全。运行期的 Preset 限制或 Provider 稳定删除会让包装器进入休眠；运行期替换为字段残缺或输出定义不兼容的工具时，只隔离对应 Agent 的对应工具并记录警告，不会终止 Host 进程，后续兼容定义出现时自动恢复。
 
 ## 贡献者
 

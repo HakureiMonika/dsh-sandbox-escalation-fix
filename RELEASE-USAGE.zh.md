@@ -1,9 +1,10 @@
-# dsh-sandbox-escalation-fix 0.1.1-desktop.2 使用说明
+# dsh-sandbox-escalation-fix 0.1.2-alpha1 使用说明
 
 ## 版本内容
 
 - 支持 DSH Desktop `2.0.3` 隐藏宿主包清单时的严格结构校验回退。
 - 支持通过 `link:`、工作区软链接或外部插件目录加载插件。
+- 支持 DSH `0.1.2-alpha.1`，本插件会按每个 Session 的实际 Sandbox Mode 与 Approval Policy 投影升级字段。
 - 保持部分包集、跨目录混装、清单损坏和非模块缺失错误时拒绝启动。
 
 ## 安装前准备
@@ -11,9 +12,9 @@
 1. 完全退出正在运行的 DSH 或 DSH Desktop。
 2. 解压 Release ZIP，确认本说明、两个 PowerShell 脚本和 `.tgz` 文件位于同一目录。
 3. 在 PowerShell 中执行 `dsh --version`，确认 `dsh` 命令可用。
-4. 当前支持的 DSH 版本为 `0.1.0-rc.5`、`0.1.0-rc.6`、`0.1.0-rc.7`、`0.1.0-rc.8`、`0.1.1-rc.1` 和 `0.1.1-rc.2`。
+4. 当前支持的 DSH 版本为 `0.1.0-rc.5`、`0.1.0-rc.6`、`0.1.0-rc.7`、`0.1.0-rc.8`、`0.1.1-rc.1`、`0.1.1-rc.2` 和 `0.1.2-alpha.1`。
 
-> DSH rc8、`0.1.1-rc.1` 和 `0.1.1-rc.2` 已有部分原生改善。建议只在实际遇到同模式升级、空 justification 或重复重试问题后安装本插件。
+> DSH `0.1.2-alpha.1` 在没有沙箱后端时会隐藏升级字段，但有沙箱后端时仍使用注册表全局静态 Schema；Session 当前模式只在执行期校验，`approval=never` 仍主要依靠提示词。因此建议只在实际遇到同模式升级、空 justification 或重复重试问题后安装本插件。
 
 ## 安装到默认 Web Profile
 
