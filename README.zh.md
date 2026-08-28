@@ -8,16 +8,6 @@
 > [!CAUTION]
 > DSH `0.1.0-rc8`、`0.1.1-rc.1`、`0.1.1-rc.2` 和 `0.1.2-alpha.1` 已做部分改善，但仍使用注册表全局升级 Schema 和执行期校验。**建议用户先观察原生行为，仅在实际遇到本文所列的同模式升级、空 justification 或反复重试问题后再安装本插件。**
 
-DSH `0.1.1-rc.2` 的官方更新集中在图像处理：DeepSeek 适配器优先使用 Files API 上传图像、复用已上传文件，并根据模型要求自动缩放和转换图像格式。与本插件相关的 Sandbox 升级、Bash、Pwsh、ToolRuntime 和审批实现均与 `0.1.1-rc.1` 相同，因此 rc.2 没有修复本文问题，也不需要调整插件核心逻辑。
-
-DSH `0.1.2-alpha.1` 改善了部署组合级广告：没有受限沙箱后端时，Bash、Pwsh、Write、Edit 不再公开升级字段。但它没有实现按 Session 投影 Schema。有沙箱后端时，工具仍会全局注册 `workspace-write` 和 `danger-full-access`；当前 Session 模式只在执行期读取，严格变宽仍在执行期校验，`approval=never` 只增加模型提示而不会删除字段。Native Tool Call 和 PTC Mode 又使用同一注册定义，因此本插件针对的问题仍可能出现。
-
-本次兼容基于官方标签提交 `cd5ef8148158c3a752a658978873241fdf8e2bbc` 的源码契约审计。验证时 alpha.1 核心包尚未发布到公共 npm，因此本 Release 使用标签源码契约核对和 alpha.1 工具形状回归测试，不会把尚无法执行的 npm 包级测试描述为已完成。
-
-插件 `0.1.1-desktop.2` 包含对 DSH Desktop `2.0.3` 的兼容。Desktop 2.0.3 会把 CommonJS 包清单覆盖解析限制在 Profile 的直接锚点，因此第三方插件自身无法读取宿主的 `@deepseek-ai/dsh-*/package.json`。当所有受检清单都被宿主统一隐藏时，本插件改用现有的严格运行时工具契约校验；部分清单可读、版本混装、清单损坏或工具定义不兼容时仍会拒绝运行。
-
-插件也支持 `link:`、工作区软链接和外部插件目录等加载方式。当插件物理目录位于宿主依赖树之外时，兼容门禁可以从宿主当前工作目录读取完整的 DSH 包清单集合。每个候选解析根必须独立提供全部受检包；部分包集、跨解析根拼接、清单损坏和非模块缺失类加载错误仍会拒绝运行。`DSH_HOME` 只存放 Harness 配置和 Profile 数据，不是稳定的 Node.js 依赖根，因此不会被用于依赖解析。
-
 **dsh-sandbox-escalation-fix** 是一个零配置兼容插件，直接解决 GPT 等第三方模型在 DSH All Access 下调用 `bash`、`pwsh`、`write`、`edit` 等工具时，因为错误的沙箱升级参数提示而调用失败、反复重试的问题。
 
 如果你遇到过下面这些错误，这个插件就是针对它们的：
@@ -27,6 +17,12 @@ Error: invalid justification: expected a non-empty sentence
 Error: sandbox escalation to "danger-full-access" is not strictly wider than this call's current "danger-full-access" mode
 Error: sandbox escalation to "workspace-write" is not strictly wider than this call's current "danger-full-access" mode
 ```
+
+<details>
+  <summary>一些次要的说明</summary>
+
+  > DSH `0.1.1-rc.2` 的官方更新集中在图像处理：DeepSeek 适配器优先使用 Files API 上传图像、复用已上传文件，并根据模型要求自动缩放和转换图像格式。与本插件相关的 Sandbox 升级、Bash、Pwsh、ToolRuntime 和审批实现均与 `0.1.1-rc.1` 相同，因此 rc.2 没有修复本文问题，也不需要调整插件核心逻辑。<br> <br>DSH 从 `0.1.0-rc8` 到 `0.1.2-alpha.1` 改善了部署组合级广告：没有受限沙箱后端时，Bash、Pwsh、Write、Edit 不再公开升级字段。但它没有实现按 Session 投影 Schema。有沙箱后端时，工具仍会全局注册 `workspace-write` 和 `danger-full-access`；当前 Session 模式只在执行期读取，严格变宽仍在执行期校验，`approval=never` 只增加模型提示而不会删除字段。Native Tool Call 和 PTC Mode 又使用同一注册定义，因此本插件针对的问题仍可能出现<br> <br>本次兼容基于官方标签提交 `cd5ef8148158c3a752a658978873241fdf8e2bbc` 的源码契约审计。验证时 alpha.1 核心包尚未发布到公共 npm，因此本 Release 使用标签源码契约核对和 alpha.1 工具形状回归测试，不会把尚无法执行的 npm 包级测试描述为已完成<br> <br>插件 `0.1.1-desktop.2` 包含对 DSH Desktop `2.0.3` 的兼容。Desktop 2.0.3 会把 CommonJS 包清单覆盖解析限制在 Profile 的直接锚点，因此第三方插件自身无法读取宿主的 `@deepseek-ai/dsh-*/package.json`。当所有受检清单都被宿主统一隐藏时，本插件改用现有的严格运行时工具契约校验；部分清单可读、版本混装、清单损坏或工具定义不兼容时仍会拒绝运行<br> <br>插件也支持 `link:`、工作区软链接和外部插件目录等加载方式。当插件物理目录位于宿主依赖树之外时，兼容门禁可以从宿主当前工作目录读取完整的 DSH 包清单集合。每个候选解析根必须独立提供全部受检包；部分包集、跨解析根拼接、清单损坏和非模块缺失类加载错误仍会拒绝运行。`DSH_HOME` 只存放 Harness 配置和 Profile 数据，不是稳定的 Node.js 依赖根，因此不会被用于依赖解析。
+</details>
 
 ## 目录
 
