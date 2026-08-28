@@ -34,18 +34,13 @@ Error: sandbox escalation to "workspace-write" is not strictly wider than this c
 - [The Problem It Solves](#the-problem-it-solves)
 - [Before and After](#before-and-after)
 - [Why This Plugin](#why-this-plugin)
-- [This Plugin vs. Execution-Only Normalization](#this-plugin-vs-execution-only-normalization)
 - [Compatibility](#compatibility)
-- [Quick Start](#quick-start)
-- [Release One-Click Install and Uninstall](#release-one-click-install-and-uninstall)
-- [Upgrade](#upgrade)
-- [Install From GitHub](#install-from-github)
-- [Manual Windows Installation](#manual-windows-installation)
-- [Behavior at a Glance](#behavior-at-a-glance)
-- [Verify the Fix](#verify-the-fix)
-- [Wrapper Conflicts](#wrapper-conflicts)
-- [Troubleshooting](#troubleshooting)
+- [Install and Upgrade](#install-and-upgrade)
 - [Uninstall](#uninstall)
+- [Manual Windows Installation](#manual-windows-installation)
+- [Verification, Behavior, and Plugin Cooperation](#verification-behavior-and-plugin-cooperation)
+- [Troubleshooting](#troubleshooting)
+- [Contributors](#contributors)
 - [Development](#development)
 - [License](#license)
 
@@ -172,7 +167,7 @@ The plugin supports DSH `0.1.0-rc.5`, `0.1.0-rc.6`, `0.1.0-rc.7`, `0.1.0-rc.8`, 
 
 Zero configuration. Install it into the Profile you actually use and start DSH as before. The test suite contains 36 tests, including runtime integration on the latest publicly available rc.2 packages and alpha.1 source-contract regression coverage for PTC Mode metadata, schema projection, dynamic restrictions, multi-Agent isolation, delegate and wrapper-protocol replacement, internal timeout-budget forwarding, failure-hint cleanup, and unload behavior.
 
-## This Plugin vs. Execution-Only Normalization
+### Compared with execution-only normalization
 
 | Capability | This plugin | Execution-only normalization |
 |---|---|---|
@@ -192,9 +187,9 @@ Zero configuration. Install it into the Profile you actually use and start DSH a
 
 The plugin checks the installed DSH package versions at startup. Mixed rc.5/rc.6/rc.7/rc.8/0.1.1-rc.1 installations and unknown DSH versions fail explicitly. An initially visible target with partial escalation fields or an incompatible output definition rejects that Agent's registration; a target that omits both escalation fields is accepted as already safe. During runtime, a Preset restriction or stable provider removal makes the wrapper dormant, while an incompatible replacement is isolated to that Agent and target tool and reported without terminating the Host process. A later compatible definition is wrapped automatically.
 
-## Quick Start
+## Install and Upgrade
 
-The plugin is a zero-configuration fix. Install it into the Profile that runs the affected sessions, then start DSH normally:
+The plugin is a zero-configuration fix. The recommended path is to download the Release ZIP and install it into the Profile that runs the affected sessions. Start DSH normally after installation:
 
 ```sh
 dsh --profile <profile>
@@ -202,13 +197,13 @@ dsh --profile <profile>
 
 You do not need to change the model configuration, Sandbox Mode, Approval Policy, or Agent Preset. The plugin projects the model-visible parameters from each Session's current permission state.
 
-## Release One-Click Install and Uninstall
+### Release ZIP installation
 
 The `0.1.2-alpha1` Release adds DSH `0.1.2-alpha.1` support while retaining Desktop 2.0.3 compatibility and the linked/external plugin resolution enhancement from PR #5. It uses the DSH CLI, so no manual Profile patch editing is required. Download and extract `dsh-sandbox-escalation-fix-0.1.2-alpha1-release.zip`; it contains the tarball, one-click install and uninstall scripts, and a concise Chinese usage guide. Earlier Releases, including `v0.1.1-desktop.2`, remain available.
 
-Close DSH before installing or removing the plugin. Ensure that `dsh` is available on PATH and that the running DSH version is rc5, rc6, rc7, rc8, `0.1.1-rc.1`, `0.1.1-rc.2`, or `0.1.2-alpha.1`. Users should install only after reproducing the affected behavior.
+Close DSH before installing or upgrading the plugin. Ensure that `dsh` is available on PATH and that the running DSH version is rc5, rc6, rc7, rc8, `0.1.1-rc.1`, `0.1.1-rc.2`, or `0.1.2-alpha.1`. Users should install only after reproducing the affected behavior.
 
-### Install into the default Web Profile
+#### Install into the default Web Profile
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\install-release.ps1"
@@ -216,24 +211,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\install-release.ps1"
 
 The script runs `dsh plugin --profile web add <tgz-absolute-path>`.
 
-### Install or remove another Profile
+#### Install into another Profile
 
 For example, use `headless` instead of the default `web` Profile:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\install-release.ps1" -Profile headless
-powershell -NoProfile -ExecutionPolicy Bypass -File ".\uninstall-release.ps1" -Profile headless
 ```
 
-### Remove from the default Web Profile
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File ".\uninstall-release.ps1"
-```
-
-The removal script runs `dsh plugin --profile web remove dsh-sandbox-escalation-fix`. Restart DSH after installation or removal.
-
-### Build the Release ZIP
+#### Build the Release ZIP
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
@@ -241,11 +227,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
 
 The script builds `lib`, packages the npm tarball, then creates `dsh-sandbox-escalation-fix-0.1.2-alpha1-release.zip` in `release/`. The generated directory is ignored by Git; upload only this ZIP as the GitHub Release asset.
 
-## Upgrade
+### Upgrade an existing installation
 
 Close DSH before upgrading. The plugin package name, Bundle ID, and Profile patch row are unchanged, so an existing installation does not need another `cordis.patch.yml` entry.
 
-### GitHub Commit Installation
+#### GitHub commit installation
 
 Run the same installation command with the new reviewed commit SHA:
 
@@ -255,7 +241,7 @@ dsh plugin --profile <profile> add github:<owner>/dsh-sandbox-escalation-fix#<ne
 
 This updates the Profile dependency and rebuilds the package. Keep the existing `allowBuilds` entry when pnpm requires it, inspect `--dump-config`, then restart DSH.
 
-### Manual Web Profile Installation
+#### Manual Web Profile installation
 
 Use the repository or packaged source that contains the new built `lib` directory. Open Windows PowerShell in that plugin directory and run:
 
@@ -265,7 +251,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\deploy-web-profile.ps1"
 
 The script uses `$DSH_HOME` when set, otherwise `%USERPROFILE%\.dsh`. It replaces only the eight published `lib` artifacts, compares every SHA-256 hash, and prints `Deployment verified.` only when the installed Web Profile exactly matches the new build. It does not modify the Profile patch or copy `node_modules`. Restart DSH after verification.
 
-## Install From GitHub
+### Command-line installation
 
 Install into the exact Profile that runs the affected sessions. Pin a reviewed commit SHA, because a Git dependency executes this package's `prepare` script during installation:
 
@@ -291,6 +277,22 @@ The output should contain a `dsh-sandbox-escalation-fix` bundle layer and the `s
 ```sh
 dsh --profile <profile>
 ```
+
+## Uninstall
+
+From an extracted Release ZIP, run:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\uninstall-release.ps1"
+```
+
+Use `-Profile headless` or another Profile name when needed. The equivalent CLI command is:
+
+```sh
+dsh plugin --profile <profile> remove dsh-sandbox-escalation-fix
+```
+
+The plugin lifecycle removes its wrapper hosts, wrapper layers, and result filters. Restart DSH, then confirm that `--dump-config` no longer lists the bundle.
 
 ## Manual Windows Installation
 
@@ -326,9 +328,11 @@ Merge this block into the Profile's `cordis.patch.yml`; do not overwrite unrelat
 
 Do not copy this repository's `node_modules` into the Profile. Multiple Cordis or DSH module instances can break Scope and Service identity.
 
-To update an existing installation, follow [Upgrade](#upgrade); do not repeat the Profile patch step.
+To update an existing installation, follow [Install and Upgrade](#install-and-upgrade); do not repeat the Profile patch step.
 
-## Behavior at a Glance
+## Verification, Behavior, and Plugin Cooperation
+
+### Behavior at a Glance
 
 | Scenario | Plugin behavior |
 |---|---|
@@ -342,7 +346,7 @@ To update an existing installation, follow [Upgrade](#upgrade); do not repeat th
 | The restriction is lifted or the provider returns | The projected wrapper is restored automatically |
 | A runtime replacement is incompatible | Only that Agent and target remain unwrapped until a compatible definition appears |
 
-## Verify the Fix
+### Verify the Fix
 
 After installing or updating the plugin, fully restart DSH and create a new session.
 
@@ -362,9 +366,15 @@ Run it with a supported Node.js version available on PATH. Wait for `dsh web: ht
 6. Switch workspaces and open existing sessions to confirm normal session restoration.
 7. If the Preset uses `agent.ctx.tools.restrict()`, enter its restricted state and confirm hidden tools disappear; lift the restriction and confirm they return without recreating the Agent.
 
-The calls should complete without `sandbox_permissions` argument errors or impossible escalation advice. Existing sessions should remain visible, workspace switching should work, and new sessions should be created in the selected workspace. The complete manual acceptance checklist is in [README.zh.md](README.zh.md#??????).
+The calls should complete without `sandbox_permissions` argument errors or impossible escalation advice. Existing sessions should remain visible, workspace switching should work, and new sessions should be created in the selected workspace.
 
-## Wrapper Conflicts
+### Verification Evidence
+
+The 36-test suite uses real DSH `SessionStore`, `ToolRuntime`, `AgentRegistry`, `SandboxPolicyService`, `ApprovalService`, and `SystemPrompt` packages rather than only isolated mocks. It covers the permission matrix, schema projection, PTC Mode SDK generation, dynamic restrictions, multi-Agent isolation, delegate replacement, cooperative wrappers, hint filtering, version checks, and unload behavior.
+
+The alpha.1 core packages were not yet available from public npm, so alpha.1 compatibility uses official tag-source contract review and tool-shape regression tests; the publicly available rc.2 packages remain the runtime integration baseline. Automated tests do not completely replace E2E validation with a real model provider.
+
+### Wrapper Conflicts
 
 The plugin owns the `bash`, `pwsh`, `write`, and `edit` names inside each Agent Exact Scope. Another plugin may share those names only through the explicit `Symbol.for('dsh.tool-wrapper.v1')` protocol. Cooperative layers are ordered by `priority` and `owner`.
 
@@ -393,19 +403,9 @@ import {
 | Escalation fields remain visible | Test a new session and check whether a later plugin replaces the same tool names |
 | Manual installation breaks Scope behavior | Remove the plugin's nested `node_modules` and verify that `package.json` is directly under the expected package directory |
 
-## Uninstall
-
-```sh
-dsh plugin --profile <profile> remove dsh-sandbox-escalation-fix
-```
-
-The plugin lifecycle removes its wrapper hosts, wrapper layers, and result filters. Confirm that `--dump-config` no longer lists the bundle after removal.
-
 ## Contributors
 
 - [sprainJinyu](https://github.com/sprainJinyu) / 张金雨 — proposed the linked and external plugin package-resolution fallback in PR #5.
-
-The original commit used `zhang.jy@topsports.com.cn`. GitHub currently lists it as an anonymous contribution; verifying that email on the contributor's GitHub account allows GitHub to associate the existing commit with `sprainJinyu` after reindexing.
 
 ## Development
 

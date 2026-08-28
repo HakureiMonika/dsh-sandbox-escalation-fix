@@ -34,20 +34,13 @@ Error: sandbox escalation to "workspace-write" is not strictly wider than this c
 - [它能解决什么问题？](#它能解决什么问题)
 - [安装前后对比](#安装前后对比)
 - [为什么选择它？](#为什么选择它)
-- [与其他“仅执行期止血”方案的区别](#与其他仅执行期止血方案的区别)
-- [快速使用](#快速使用)
-- [Release 一键安装与卸载](#release-一键安装与卸载)
-- [升级插件](#升级插件)
-- [手动覆盖安装（Windows）](#手动覆盖安装windows)
-- [命令行安装](#命令行安装)
-- [验证修复](#验证修复)
-- [人工测试清单](#人工测试清单)
-- [验证证据](#验证证据)
-- [插件行为一览](#插件行为一览)
-- [与其他包装插件协作](#与其他包装插件协作)
+- [安装与升级](#安装与升级)
 - [卸载](#卸载)
+- [手动覆盖安装（Windows）](#手动覆盖安装windows)
+- [验证、行为与插件协作](#验证行为与插件协作)
 - [故障排查](#故障排查)
 - [支持范围](#支持范围)
+- [贡献者](#贡献者)
 - [开发验证](#开发验证)
 
 ## 这是什么？
@@ -175,7 +168,7 @@ Session B = danger-full-access + never   → 看不到升级字段
 
 零配置，安装到实际使用的 Profile 后即可生效。测试覆盖 36 项，包含当前公共 npm 可获得的 rc.2 真实包运行时集成验证，以及 alpha.1 标签源码契约和 PTC Mode 元数据回归验证，覆盖 Schema 投影、动态限制、多 Agent 隔离、Delegate 与协作包装器替换、内部超时预算透传、失败提示清理和插件卸载等关键路径。
 
-## 与其他“仅执行期止血”方案的区别
+### 与“仅执行期止血”方案的区别
 
 | 能力 | 本插件 | 仅执行期参数正规化 |
 |---|---|---|
@@ -187,9 +180,9 @@ Session B = danger-full-access + never   → 看不到升级字段
 | 清理描述与结果中的无效升级建议 | 覆盖 Shell、FS、PTC Mode、`job_output` | 不支持 |
 | 响应 Agent、Preset 和工具生命周期变化 | 支持 | 取决于实现 |
 
-## 快速使用
+## 安装与升级
 
-插件为零配置修复。安装到实际使用的 Profile 后，继续按原方式启动 DSH 即可：
+插件为零配置修复。推荐下载 Release ZIP，通过脚本安装到实际使用的 Profile；安装后按原方式启动 DSH：
 
 ```sh
 dsh --profile <profile>
@@ -197,7 +190,7 @@ dsh --profile <profile>
 
 无需修改模型配置、Sandbox Mode、Approval Policy 或 Agent Preset。插件会按每个 Session 的当前权限状态动态决定模型可见参数。
 
-## Release 一键安装与卸载
+### Release ZIP 一键安装
 
 `0.1.2-alpha1` Release 新增 DSH `0.1.2-alpha.1` 支持，同时保留 Desktop 2.0.3 兼容和 PR #5 的软链接/外部插件目录解析增强，并通过 DSH CLI 管理插件，不需要手动编辑 Profile Patch。包括 `v0.1.1-desktop.2` 在内的旧 Release 均保留。新版 Release ZIP 解压后包含以下四个文件：
 
@@ -208,9 +201,9 @@ uninstall-release.ps1
 RELEASE-USAGE.zh.md
 ```
 
-安装或卸载前先完全关闭 DSH。双击脚本前，请确认系统已将 `dsh` 命令加入 PATH，且当前 DSH 使用的是 rc5、rc6、rc7、rc8、`0.1.1-rc.1`、`0.1.1-rc.2` 或 `0.1.2-alpha.1`。建议先实际复现同类错误，再决定是否安装。
+安装或升级前先完全关闭 DSH。执行脚本前，请确认系统已将 `dsh` 命令加入 PATH，且当前 DSH 使用的是 rc5、rc6、rc7、rc8、`0.1.1-rc.1`、`0.1.1-rc.2` 或 `0.1.2-alpha.1`。建议先实际复现同类错误，再决定是否安装。
 
-### 安装到默认 Web Profile
+#### 安装到默认 Web Profile
 
 在 Release 目录打开 PowerShell，执行：
 
@@ -226,7 +219,7 @@ dsh plugin --profile web add <tgz-absolute-path>
 
 DSH CLI 会将插件安装到 `web` Profile，并在 pnpm 成功后自动把插件的 `cordis.patch.yml` 加入 Profile Bundle 层。安装完成后重启 DSH。
 
-### 安装到其他 Profile
+#### 安装到其他 Profile
 
 例如安装到 `headless`：
 
@@ -234,31 +227,7 @@ DSH CLI 会将插件安装到 `web` Profile，并在 pnpm 成功后自动把插�
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\install-release.ps1" -Profile headless
 ```
 
-### 从默认 Web Profile 卸载
-
-在同一 Release 目录执行：
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File ".\uninstall-release.ps1"
-```
-
-脚本会执行：
-
-```powershell
-dsh plugin --profile web remove dsh-sandbox-escalation-fix
-```
-
-DSH CLI 会移除 Profile 依赖，并同步移除对应 Bundle 层；完成后重启 DSH。
-
-### 从其他 Profile 卸载
-
-例如从 `headless` 卸载：
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File ".\uninstall-release.ps1" -Profile headless
-```
-
-### 发布者构建 Release 目录
+#### 发布者构建 Release 目录
 
 在源码根目录执行：
 
@@ -268,11 +237,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
 
 该脚本会先构建 `lib`，再执行 `npm pack` 生成 `.tgz`，最后在 `release` 目录生成 `dsh-sandbox-escalation-fix-0.1.2-alpha1-release.zip`。ZIP 内含 tarball、两个一键脚本和简明中文使用说明；上传 GitHub Release 时只需上传该 ZIP。
 
-## 升级插件
+### 升级已有安装
 
 升级前必须关闭 DSH。插件包名、Bundle ID 和 Profile Patch 配置行均未改变，已经安装旧版的用户不需要再次修改 `cordis.patch.yml`。
 
-### 通过 GitHub Commit 安装的用户
+#### 通过 GitHub Commit 安装的用户
 
 将原安装命令中的 Commit SHA 换成新的、已经审核过的 SHA，再执行同一条命令：
 
@@ -282,7 +251,7 @@ dsh plugin --profile <profile> add github:<owner>/dsh-sandbox-escalation-fix#<ne
 
 该命令会更新 Profile 依赖并重新构建插件。如果 pnpm 要求 `allowBuilds`，继续保留原有配置即可。安装完成后检查 `--dump-config`，然后重新启动 DSH。
 
-### 手动安装到 Web Profile 的用户
+#### 手动安装到 Web Profile 的用户
 
 准备包含新版 `lib` 的仓库或发布包，在插件目录中打开 Windows PowerShell，然后执行：
 
@@ -297,6 +266,57 @@ Deployment verified.
 ```
 
 脚本不会修改 Profile Patch，也不会复制 `node_modules`。验证成功后重新启动 DSH。
+
+### 通过命令行安装
+
+建议从可信仓库锁定 Commit SHA 安装到指定 Profile：
+
+```sh
+dsh plugin --profile <profile> add github:<owner>/dsh-sandbox-escalation-fix#<commit-sha>
+```
+
+也可以从本地目录安装：
+
+```sh
+dsh plugin --profile <profile> add D:/deepseek-harness/plugins/dsh-sandbox-escalation-fix
+```
+
+Git 安装会运行本包的 `prepare` 构建脚本。pnpm 10 首次可能拒绝执行；按 DSH 输出提示，在该 Profile 的 `pnpm-workspace.yaml` 中加入：
+
+```yaml
+allowBuilds:
+  dsh-sandbox-escalation-fix: true
+```
+
+重新执行安装命令后检查最终组合：
+
+```sh
+dsh --profile <profile> --dump-config
+```
+
+输出中应包含 `dsh-sandbox-escalation-fix` 层和 `sandbox-escalation-fix` 行。
+
+## 卸载
+
+使用 Release ZIP 时，可在解压目录执行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\uninstall-release.ps1"
+```
+
+其他 Profile 通过 `-Profile` 指定，例如：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\uninstall-release.ps1" -Profile headless
+```
+
+等效的 DSH CLI 命令为：
+
+```sh
+dsh plugin --profile <profile> remove dsh-sandbox-escalation-fix
+```
+
+卸载会移除插件创建的包装 Host、包装层和结果过滤器。完成后重启 DSH，并可通过 `dsh --profile <profile> --dump-config` 确认输出中不再出现插件层。
 
 ## 手动覆盖安装（Windows）
 
@@ -418,7 +438,7 @@ lib\
 <Profile目录>\node_modules\dsh-sandbox-escalation-fix\dsh-sandbox-escalation-fix\package.json
 ```
 
-更新已经安装的版本时，请直接按照[升级插件](#升级插件)操作，不要重复添加 Profile Patch。
+更新已经安装的版本时，请直接按照[安装与升级](#安装与升级)操作，不要重复添加 Profile Patch。
 
 ### 4. 修改 Profile Patch
 
@@ -511,36 +531,9 @@ lib\
 3. 删除 `<Profile目录>\node_modules\dsh-sandbox-escalation-fix`。
 4. 如果保留了 `.backup`，将其改回原名；否则直接重启 DSH。
 
-## 命令行安装
+## 验证、行为与插件协作
 
-建议从可信仓库锁定 Commit SHA 安装到指定 Profile：
-
-```sh
-dsh plugin --profile <profile> add github:<owner>/dsh-sandbox-escalation-fix#<commit-sha>
-```
-
-在发布到 GitHub 前，也可以从本地目录安装：
-
-```sh
-dsh plugin --profile <profile> add D:/deepseek-harness/plugins/dsh-sandbox-escalation-fix
-```
-
-Git 安装会运行本包的 `prepare` 构建脚本。pnpm 10 首次可能拒绝执行；按 DSH 输出提示，在该 Profile 的 `pnpm-workspace.yaml` 中加入：
-
-```yaml
-allowBuilds:
-  dsh-sandbox-escalation-fix: true
-```
-
-然后重新执行安装命令，并检查最终组合：
-
-```sh
-dsh --profile <profile> --dump-config
-```
-
-输出中应包含 `dsh-sandbox-escalation-fix` 层和 `sandbox-escalation-fix` 行。
-
-## 验证修复
+### 验证修复
 
 Web 正常启动只能证明 Profile 组合成功、插件加载时没有导致进程退出；动态限制行为仍需按本节后续步骤验证。使用 DSH 源码仓库时，可在仓库根目录运行：
 
@@ -569,60 +562,9 @@ dsh web: http://127.0.0.1:3080
 
 修改插件安装状态、Profile 或 Preset 后，建议新建 Session 验证，避免把旧 Agent Scope 的行为误认为当前配置。
 
-## 人工测试清单
+### 验证证据
 
-每项测试建议使用重启后新建的 Session。涉及文件写入的项目使用专门的临时目录，完成后删除测试文件。
-
-### Web 与会话生命周期
-
-- [ ] 刷新 Web 后，已有会话仍显示在原工作区。
-- [ ] 依次点击至少三个已有会话；每个会话都能打开，不会从列表临时消失。
-- [ ] 在两个工作区之间来回切换；列表和当前工作区标题同步变化。
-- [ ] 在工作区 A 新建会话；新会话保留在工作区 A，且可以正常发送第一条消息。
-- [ ] 在工作区 B 新建会话；新会话保留在工作区 B，不会跳回工作区 A。
-- [ ] 刷新 Web 后，刚创建的会话仍存在并能重新打开。
-- [ ] 关闭并重新启动 DSH 后，再次打开旧会话和新会话均正常。
-
-### OAI 模型与 All Access
-
-将模型切换为受影响的 OAI 系列模型，并将 Access Mode 设为 All Access。
-
-- [ ] 发送“使用 pwsh 输出当前目录”；工具成功执行，没有 `sandbox_permissions` 参数错误。
-- [ ] 发送“使用 pwsh 输出数字 12345”；结果包含 `12345`，且没有无效升级提示。
-- [ ] 发送“读取测试目录中的 sample.txt”；读取工具返回文件内容。
-- [ ] 发送“创建 plugin-smoke.txt，内容为 smoke-test”；写入工具成功。
-- [ ] 发送“将 plugin-smoke.txt 中的 smoke-test 改为 smoke-test-updated”；编辑工具成功。
-- [ ] 再次读取该文件；结果为 `smoke-test-updated`。
-- [ ] 删除人工测试产生的文件，确认工作区没有残留。
-
-### 权限矩阵
-
-- [ ] `danger-full-access` + `never`：Shell、write、edit 正常执行，不出现要求再次升级到 `danger-full-access` 的提示。
-- [ ] `workspace-write` + `ask`：工作区内写入正常；需要更高权限的操作仍可请求 `danger-full-access`。
-- [ ] `read-only` + `ask`：读取正常；写入操作仍按 DSH 原策略请求 `workspace-write` 或更高权限。
-- [ ] 任意 Mode + `never`：不会向模型提供无法获批的升级路径。
-
-### Preset 与 PTC Mode
-
-- [ ] 在可用的两个 Agent Preset 之间切换后，新建 Session，pwsh 与文件工具仍正常。
-- [ ] 使用会调用 `agent.ctx.tools.restrict()` 的动态 Preset；进入限制状态后，被限制工具立即从 Native Schema 和 PTC Mode SDK 消失。
-- [ ] 解除动态限制后，不重建 Agent 也能恢复相应工具，且恢复后的 Schema 仍按当前权限隐藏无效升级字段。
-- [ ] 两个 Agent 使用不同动态限制时，一个 Agent 隐藏工具不会影响另一个 Agent。
-- [ ] 如果使用 PTC Mode，程序内调用 pwsh、读取和写入工具均正常，错误消息不包含无法执行的升级建议。
-- [ ] 切回 Native Tool 模式后，工具行为保持一致。
-
-### 冲突与稳定性
-
-- [ ] 连续新建和关闭多个 Session，Web 不出现会话临时消失或工作区无法切换。
-- [ ] 执行工具失败时，失败应显示为当前工具错误，不应使会话从列表消失。
-- [ ] 浏览器刷新后，所有会话和工作区状态仍可恢复。
-- [ ] DSH 启动日志中没有 `has no scope key`、`installation failed` 或同名工具注册错误。
-
-全部通过后，可认为会话生命周期、OAI All Access、Native/PTC Mode 和主要权限路径均已人工验收。
-
-## 验证证据
-
-自动测试直接使用真实 DSH `SessionStore`、`ToolRuntime`、`AgentRegistry`、`SandboxPolicyService`、`ApprovalService` 和 `SystemPrompt` 包，而不是只测试隔离 Mock。28 项测试覆盖：
+自动测试直接使用真实 DSH `SessionStore`、`ToolRuntime`、`AgentRegistry`、`SandboxPolicyService`、`ApprovalService` 和 `SystemPrompt` 包，而不是只测试隔离 Mock。36 项测试覆盖：
 
 - 权限矩阵；
 - 精确同模式正规化；
@@ -638,9 +580,9 @@ dsh web: http://127.0.0.1:3080
 - 版本检查；
 - 插件卸载失效。
 
-自动测试不能替代真实模型 Provider 的 E2E 证据。上方人工清单用于验证完整 Web 会话生命周期和受影响的 OAI All Access 工作流。
+其中 alpha.1 核心包尚未发布到公共 npm，alpha.1 兼容部分采用官方标签源码契约审计和工具形状回归测试；当前公共 npm 可获得的 rc.2 包继续用于运行时集成验证。自动测试不能完全替代真实模型 Provider 的 E2E 验证。
 
-## 插件行为一览
+### 插件行为一览
 
 | 场景 | 插件行为 |
 |---|---|
@@ -654,7 +596,7 @@ dsh web: http://127.0.0.1:3080
 | 限制解除或 Provider 恢复 | 自动重新建立投影包装，无需重建 Agent |
 | 运行期替换为不兼容定义 | 只让对应 Agent 的对应工具暂时不包装，记录诊断并等待兼容定义恢复 |
 
-## 与其他包装插件协作
+### 与其他包装插件协作
 
 插件会占用每个 Agent Exact Scope 中的 `bash`、`pwsh`、`write`、`edit` 名称。
 
@@ -669,22 +611,6 @@ import {
   type ToolWrapperProtocolV1,
 } from 'dsh-sandbox-escalation-fix/wrapper-protocol'
 ```
-
-## 卸载
-
-```sh
-dsh plugin --profile <profile> remove dsh-sandbox-escalation-fix
-```
-
-卸载会移除本插件创建的包装 Host、包装层和结果过滤器。显式协作层必须随其自身插件生命周期释放；本插件 Host 卸载时，这些层也会一并失效。
-
-卸载后可再次检查组合：
-
-```sh
-dsh --profile <profile> --dump-config
-```
-
-输出中不应再出现 `dsh-sandbox-escalation-fix` 层。
 
 ## 故障排查
 
@@ -715,8 +641,6 @@ dsh --profile <profile> --dump-config
 ## 贡献者
 
 - [sprainJinyu](https://github.com/sprainJinyu) / 张金雨：在 PR #5 中提出了软链接和外部插件目录的包清单解析回退方案。
-
-原提交使用邮箱 `zhang.jy@topsports.com.cn`。GitHub 当前将其显示为匿名贡献；作者在 GitHub 账号中添加并验证该邮箱后，GitHub 重新索引时即可把现有提交自动归属到 `sprainJinyu`。
 
 ## 开发验证
 
