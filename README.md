@@ -197,7 +197,7 @@ You do not need to change the model configuration, Sandbox Mode, Approval Policy
 
 ### Release ZIP installation
 
-The `0.1.2-alpha1` Release adds DSH `0.1.2-alpha.1` support while retaining Desktop 2.0.3 compatibility and the linked/external plugin resolution enhancement from PR #5. It uses the DSH CLI, so no manual Profile patch editing is required. Download and extract `dsh-sandbox-escalation-fix-0.1.2-alpha1-release.zip`; it contains the tarball, one-click install and uninstall scripts, and a concise Chinese usage guide. Earlier Releases, including `v0.1.1-desktop.2`, remain available.
+The `0.1.2-alpha1.1` Release retains DSH `0.1.2-alpha.1` and Desktop 2.0.3 compatibility, the linked/external plugin resolution enhancement from PR #5, and adds the Git installation fix from PR #8. Git installations now use the committed, prebuilt `lib` without requiring `allowBuilds`. Download and extract `dsh-sandbox-escalation-fix-0.1.2-alpha1.1-release.zip`; it contains the tarball, one-click install and uninstall scripts, and a concise Chinese usage guide. Earlier Releases, including `v0.1.2-alpha1`, remain available.
 
 Close DSH before installing or upgrading the plugin. Ensure that `dsh` is available on PATH and that the running DSH version is rc5, rc6, rc7, rc8, `0.1.1-rc.1`, `0.1.1-rc.2`, or `0.1.2-alpha.1`. Users should install only after reproducing the affected behavior.
 
@@ -223,7 +223,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\install-release.ps1" -Pro
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
 ```
 
-The script builds `lib`, packages the npm tarball, then creates `dsh-sandbox-escalation-fix-0.1.2-alpha1-release.zip` in `release/`. The generated directory is ignored by Git; upload only this ZIP as the GitHub Release asset.
+The script builds `lib`, packages the npm tarball, then creates `dsh-sandbox-escalation-fix-0.1.2-alpha1.1-release.zip` in `release/`. The generated directory is ignored by Git; upload only this ZIP as the GitHub Release asset.
 
 ### Upgrade an existing installation
 
@@ -251,7 +251,7 @@ The script uses `$DSH_HOME` when set, otherwise `%USERPROFILE%\.dsh`. It replace
 
 ### Command-line installation
 
-Install into the exact Profile that runs the affected sessions. Pin a reviewed commit SHA, because a Git dependency executes this package's `prepare` script during installation:
+Install into the exact Profile that runs the affected sessions and pin a reviewed commit SHA:
 
 ```sh
 dsh plugin --profile <profile> add github:<owner>/dsh-sandbox-escalation-fix#<commit-sha>
@@ -399,6 +399,7 @@ import {
 ## Contributors
 
 - [sprainJinyu](https://github.com/sprainJinyu) / 张金雨 — proposed the linked and external plugin package-resolution fallback in PR #5.
+- [tappat225](https://github.com/tappat225) / tappat — removed the unnecessary Git dependency `prepare` step in PR #8, allowing installation without an `allowBuilds` entry.
 
 ## Development
 

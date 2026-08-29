@@ -1,6 +1,6 @@
 {
   "name": "dsh-sandbox-escalation-fix",
-  "version": "0.1.2-alpha1",
+  "version": "0.1.2-alpha1.1",
   "description": "Session-aware sandbox escalation compatibility plugin for DeepSeek Harness",
   "keywords": [
     "deepseek-harness",

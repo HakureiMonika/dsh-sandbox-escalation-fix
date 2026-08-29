@@ -188,10 +188,10 @@ dsh --profile <profile>
 
 ### Release ZIP 一键安装
 
-`0.1.2-alpha1` Release 新增 DSH `0.1.2-alpha.1` 支持，同时保留 Desktop 2.0.3 兼容和 PR #5 的软链接/外部插件目录解析增强，并通过 DSH CLI 管理插件，不需要手动编辑 Profile Patch。包括 `v0.1.1-desktop.2` 在内的旧 Release 均保留。新版 Release ZIP 解压后包含以下四个文件：
+`0.1.2-alpha1.1` Release 保留 DSH `0.1.2-alpha.1`、Desktop 2.0.3 兼容和 PR #5 的软链接/外部插件目录解析增强，并加入 PR #8 的 Git 安装修复。Git 安装会直接使用仓库内预构建的 `lib`，不再要求配置 `allowBuilds`。包括 `v0.1.2-alpha1` 在内的旧 Release 均保留。新版 Release ZIP 解压后包含以下四个文件：
 
 ```text
-dsh-sandbox-escalation-fix-0.1.2-alpha1.tgz
+dsh-sandbox-escalation-fix-0.1.2-alpha1.1.tgz
 install-release.ps1
 uninstall-release.ps1
 RELEASE-USAGE.zh.md
@@ -231,7 +231,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\install-release.ps1" -Pro
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
 ```
 
-该脚本会先构建 `lib`，再执行 `npm pack` 生成 `.tgz`，最后在 `release` 目录生成 `dsh-sandbox-escalation-fix-0.1.2-alpha1-release.zip`。ZIP 内含 tarball、两个一键脚本和简明中文使用说明；上传 GitHub Release 时只需上传该 ZIP。
+该脚本会先构建 `lib`，再执行 `npm pack` 生成 `.tgz`，最后在 `release` 目录生成 `dsh-sandbox-escalation-fix-0.1.2-alpha1.1-release.zip`。ZIP 内含 tarball、两个一键脚本和简明中文使用说明；上传 GitHub Release 时只需上传该 ZIP。
 
 ### 升级已有安装
 
@@ -632,6 +632,7 @@ import {
 ## 贡献者
 
 - [sprainJinyu](https://github.com/sprainJinyu) / 张金雨：在 PR #5 中提出了软链接和外部插件目录的包清单解析回退方案。
+- [tappat225](https://github.com/tappat225) / tappat：在 PR #8 中移除了 Git 依赖不必要的 `prepare` 步骤，使插件无需配置 `allowBuilds` 即可安装。
 
 ## 开发验证
 
