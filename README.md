@@ -237,7 +237,7 @@ Run the same installation command with the new reviewed commit SHA:
 dsh plugin --profile <profile> add github:<owner>/dsh-sandbox-escalation-fix#<new-commit-sha>
 ```
 
-This updates the Profile dependency and rebuilds the package. Keep the existing `allowBuilds` entry when pnpm requires it, inspect `--dump-config`, then restart DSH.
+This updates the Profile dependency. The repository ships prebuilt `lib` files and the package defines no install-time build scripts, so pnpm never asks for an `allowBuilds` entry. Inspect `--dump-config`, then restart DSH.
 
 #### Manual Web Profile installation
 
@@ -257,12 +257,7 @@ Install into the exact Profile that runs the affected sessions. Pin a reviewed c
 dsh plugin --profile <profile> add github:<owner>/dsh-sandbox-escalation-fix#<commit-sha>
 ```
 
-pnpm 10 blocks Git dependency build scripts until the Profile explicitly allows them. If the first installation reports a blocked build, add this entry to `$DSH_HOME/profiles/<profile>/pnpm-workspace.yaml`:
-
-```yaml
-allowBuilds:
-  dsh-sandbox-escalation-fix: true
-```
+The package has no `prepare` or other install-time build script: pnpm installs the committed, prebuilt `lib` directly and no `allowBuilds` allowlist entry is needed. Versions before the `prepare` removal did run a build on install; if such an old version left a `dsh-sandbox-escalation-fix@https://codeload.github.com/...` entry under `allowBuilds` in `$DSH_HOME/profiles/<profile>/pnpm-workspace.yaml`, that stale entry can be removed after upgrading.
 
 Run the installation command again, then inspect the composed configuration:
 
@@ -393,7 +388,7 @@ import {
 | Problem | What to do |
 |---|---|
 | The plugin does not load | Confirm installation and startup use the same `--profile`, then inspect `--dump-config` |
-| A Git install cannot build | Add the package to the Profile's `allowBuilds` map and retry the installation |
+| A Git install is blocked by `allowBuilds` | The installed commit still carries the removed `prepare` script; pin a newer commit that ships prebuilt `lib` with no build scripts |
 | Startup rejects DSH versions | Keep the relevant `@deepseek-ai/dsh-*` packages on one supported release candidate |
 | Agent registration reports a tool conflict | Remove the incompatible same-name wrapper or update it to implement the wrapper protocol |
 | A dynamic Preset hides tools | This is expected; the plugin mirrors `tools.restrict()` and restores wrappers when the restriction is lifted |
@@ -414,7 +409,7 @@ npm run build
 npm pack --dry-run
 ```
 
-Git installation builds from source through the self-contained `prepare` script. Registry or tarball distribution may ship the generated `lib` files instead.
+Git, registry and tarball installations all ship the committed, prebuilt `lib` files; no build scripts run during installation, so pnpm never requires an `allowBuilds` entry. Run `npm run build` locally after changing `src` and commit the refreshed `lib`.
 
 ## License
 
