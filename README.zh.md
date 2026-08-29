@@ -245,7 +245,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
 dsh plugin --profile <profile> add github:<owner>/dsh-sandbox-escalation-fix#<new-commit-sha>
 ```
 
-该命令会更新 Profile 依赖并重新构建插件。如果 pnpm 要求 `allowBuilds`，继续保留原有配置即可。安装完成后检查 `--dump-config`，然后重新启动 DSH。
+该命令会更新 Profile 依赖。仓库内已提交预构建的 `lib`，本包不再声明任何安装期构建脚本，pnpm 不会要求 `allowBuilds` 白名单。安装完成后检查 `--dump-config`，然后重新启动 DSH。
 
 #### 手动安装到 Web Profile 的用户
 
@@ -277,12 +277,7 @@ dsh plugin --profile <profile> add github:<owner>/dsh-sandbox-escalation-fix#<co
 dsh plugin --profile <profile> add D:/deepseek-harness/plugins/dsh-sandbox-escalation-fix
 ```
 
-Git 安装会运行本包的 `prepare` 构建脚本。pnpm 10 首次可能拒绝执行；按 DSH 输出提示，在该 Profile 的 `pnpm-workspace.yaml` 中加入：
-
-```yaml
-allowBuilds:
-  dsh-sandbox-escalation-fix: true
-```
+本包已移除 `prepare` 等安装期构建脚本：Git 安装直接使用仓库内提交的预构建 `lib`，pnpm 不会要求 `allowBuilds` 白名单。旧版本安装时曾需要允许构建；如果 Profile 的 `pnpm-workspace.yaml` 里还残留 `dsh-sandbox-escalation-fix@https://codeload.github.com/...` 条目，升级到新版后可以删除。
 
 重新执行安装命令后检查最终组合：
 
@@ -617,7 +612,7 @@ import {
 | 不知道 `[]` 怎么改 | 保留注释，只把独占一行的 `[]` 替换为不带方括号的 `- insert:` YAML 块 |
 | 复制了整个开发文件夹 | 可以保留，但必须删除目标插件目录内部的 `node_modules`，并确认没有多套一层同名目录 |
 | YAML 启动报错 | 检查 `- insert:` 是否顶格、是否误加了方括号或引号，以及缩进是否只使用空格 |
-| Git 安装构建失败 | 确认 Profile 的 `pnpm-workspace.yaml` 已允许构建 `dsh-sandbox-escalation-fix`，然后重新安装 |
+| Git 安装被 `allowBuilds` 拦截 | 说明装到的是仍带 `prepare` 脚本的旧提交；固定到已移除 `prepare`、随仓库提交预构建 `lib` 的新提交 SHA 后重新安装 |
 | 启动时报版本错误 | 不要混装 rc.5、rc.6、rc.7、rc.8、0.1.1-rc.1、0.1.1-rc.2 与 0.1.2-alpha.1 包；让 Profile 中关键 `@deepseek-ai/dsh-*` 包保持同一版本 |
 | Agent 注册时报同名工具冲突 | 另一个插件已在 Agent Exact Scope 注册 `bash`、`pwsh`、`write` 或 `edit`，且未实现协作协议；只能卸载其中一个 |
 | 动态 Preset 隐藏了部分工具 | 这是正常行为；插件会镜像 `tools.restrict()`，限制解除后自动恢复包装 |
