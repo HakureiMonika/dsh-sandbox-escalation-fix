@@ -8,7 +8,7 @@ English | [简体中文](README.zh.md)
 > [!CAUTION]
 > DSH `0.1.0-rc8`, `0.1.1-rc.1`, `0.1.1-rc.2`, and `0.1.2-alpha.1` partially improve this issue, but still use registry-global escalation schemas and execution-time validation. **Users should first observe the built-in behavior and install this plugin only after reproducing the same-mode escalation, blank justification, or retry-loop failures described below.**
 
-
+> *If it's useful, please stars let more people can see it.*
 
 **dsh-sandbox-escalation-fix** is a zero-configuration compatibility plugin that directly resolves the issue of third-party models like GPT failing to call tools such as `bash`, `pwsh`, `write`, and `edit` under DSH All Access, resulting in repeated retries due to incorrect sandbox escalation parameter prompts.
 
