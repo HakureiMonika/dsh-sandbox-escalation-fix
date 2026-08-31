@@ -1,4 +1,4 @@
-# dsh-sandbox-escalation-fix 0.1.2-alpha2 使用说明
+# dsh-sandbox-escalation-fix 0.1.2-alpha2.1 使用说明
 
 ## 版本内容
 
@@ -7,6 +7,7 @@
 - 支持 DSH `0.1.2-alpha.2`，本插件会按每个 Session 的实际 Sandbox Mode 与 Approval Policy 投影升级字段。
 - 保持部分包集、跨目录混装、清单损坏和非模块缺失错误时拒绝启动。
 - Git Commit 安装直接使用仓库内预构建的 `lib`，不再执行 `prepare`，无需在 Profile 中配置 `allowBuilds`。
+- 移除 `cordis.patch.yml` 的 UTF-8 BOM，避免部分 Windows 编码工具重复写回时叠加为多 BOM；旧版本建议及时更换为本版本。
 
 ## 安装前准备
 

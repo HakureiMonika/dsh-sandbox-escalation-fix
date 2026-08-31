@@ -197,7 +197,7 @@ You do not need to change the model configuration, Sandbox Mode, Approval Policy
 
 ### Release ZIP installation
 
-The `0.1.2-alpha2` Release adds DSH `0.1.2-alpha.2` compatibility while retaining Desktop 2.0.3 support, the linked/external plugin resolution enhancement from PR #5, and the Git installation fix from PR #8. Download and extract `dsh-sandbox-escalation-fix-0.1.2-alpha2-release.zip`; it contains the tarball, one-click install and uninstall scripts, and a concise Chinese usage guide. Earlier Releases, including `v0.1.2-alpha1.1`, remain available.
+The `0.1.2-alpha2.1` Release removes the UTF-8 BOM from `cordis.patch.yml` while retaining DSH `0.1.2-alpha.2`, Desktop 2.0.3, linked/external plugin resolution, and Git installation support. Earlier packages may be exposed to repeated-BOM contamination when that file is rewritten by some Windows encoding tools; users should replace them with this Release. Download and extract `dsh-sandbox-escalation-fix-0.1.2-alpha2.1-release.zip`; it contains the tarball, one-click install and uninstall scripts, and a concise Chinese usage guide. Earlier Releases remain available.
 
 Close DSH before installing or upgrading the plugin. Ensure that `dsh` is available on PATH and that the running DSH version is rc5, rc6, rc7, rc8, `0.1.1-rc.1`, `0.1.1-rc.2`, `0.1.2-alpha.1`, or `0.1.2-alpha.2`. Users should install only after reproducing the affected behavior.
 
@@ -223,7 +223,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\install-release.ps1" -Pro
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
 ```
 
-The script builds `lib`, packages the npm tarball, then creates `dsh-sandbox-escalation-fix-0.1.2-alpha2-release.zip` in `release/`. The generated directory is ignored by Git; upload only this ZIP as the GitHub Release asset.
+The script builds `lib`, packages the npm tarball, then creates `dsh-sandbox-escalation-fix-0.1.2-alpha2.1-release.zip` in `release/`. The generated directory is ignored by Git; upload only this ZIP as the GitHub Release asset.
 
 ### Upgrade an existing installation
 

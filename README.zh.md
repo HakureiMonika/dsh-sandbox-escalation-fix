@@ -190,10 +190,10 @@ dsh --profile <profile>
 
 ### Release ZIP 一键安装
 
-`0.1.2-alpha2` Release 新增 DSH `0.1.2-alpha.2` 兼容，同时保留 Desktop 2.0.3、PR #5 的软链接/外部插件目录解析增强和 PR #8 的 Git 安装修复。包括 `v0.1.2-alpha1.1` 在内的旧 Release 均保留。新版 Release ZIP 解压后包含以下四个文件：
+`0.1.2-alpha2.1` Release 移除了 `cordis.patch.yml` 的 UTF-8 BOM，同时保留 DSH `0.1.2-alpha.2`、Desktop 2.0.3、PR #5 的软链接/外部插件目录解析增强和 PR #8 的 Git 安装修复。部分旧版本在 Windows 编码工具重复写回该文件时可能出现多 BOM 污染，建议及时更换为本版本；旧 Release 仍会保留。新版 Release ZIP 解压后包含以下四个文件：
 
 ```text
-dsh-sandbox-escalation-fix-0.1.2-alpha2.tgz
+dsh-sandbox-escalation-fix-0.1.2-alpha2.1.tgz
 install-release.ps1
 uninstall-release.ps1
 RELEASE-USAGE.zh.md
@@ -233,7 +233,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\install-release.ps1" -Pro
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
 ```
 
-该脚本会先构建 `lib`，再执行 `npm pack` 生成 `.tgz`，最后在 `release` 目录生成 `dsh-sandbox-escalation-fix-0.1.2-alpha2-release.zip`。ZIP 内含 tarball、两个一键脚本和简明中文使用说明；上传 GitHub Release 时只需上传该 ZIP。
+该脚本会先构建 `lib`，再执行 `npm pack` 生成 `.tgz`，最后在 `release` 目录生成 `dsh-sandbox-escalation-fix-0.1.2-alpha2.1-release.zip`。ZIP 内含 tarball、两个一键脚本和简明中文使用说明；上传 GitHub Release 时只需上传该 ZIP。
 
 ### 升级已有安装
 
