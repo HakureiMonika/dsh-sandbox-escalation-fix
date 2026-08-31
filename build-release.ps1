@@ -3,8 +3,8 @@ param()
 
 $ErrorActionPreference = 'Stop'
 Set-Location -LiteralPath $PSScriptRoot
-$releaseTarball = '.\release\dsh-sandbox-escalation-fix-0.1.2-alpha1.1.tgz'
-$releaseZip = Join-Path $PSScriptRoot 'release\dsh-sandbox-escalation-fix-0.1.2-alpha1.1-release.zip'
+$releaseTarball = '.\release\dsh-sandbox-escalation-fix-0.1.2-alpha2.tgz'
+$releaseZip = Join-Path $PSScriptRoot 'release\dsh-sandbox-escalation-fix-0.1.2-alpha2-release.zip'
 
 # 直接使用 npm pack 根据 package.json 生成标准包名，避免依赖不同 PowerShell 版本的 JSON 对象适配行为。
 # 构建前清理旧 tarball 和本版本 ZIP，确保后续校验对应本次新生成的唯一产物。
@@ -28,7 +28,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 Add-Type -AssemblyName System.IO.Compression
 $archive = [System.IO.Compression.ZipFile]::Open($releaseZip, [System.IO.Compression.ZipArchiveMode]::Create)
 try {
-  foreach ($name in @('dsh-sandbox-escalation-fix-0.1.2-alpha1.1.tgz', 'install-release.ps1', 'uninstall-release.ps1', 'RELEASE-USAGE.zh.md')) {
+  foreach ($name in @('dsh-sandbox-escalation-fix-0.1.2-alpha2.tgz', 'install-release.ps1', 'uninstall-release.ps1', 'RELEASE-USAGE.zh.md')) {
     $source = Join-Path $PSScriptRoot "release\$name"
     [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $source, $name, [System.IO.Compression.CompressionLevel]::Optimal) | Out-Null
   }
@@ -37,5 +37,5 @@ try {
 }
 if (-not (Test-Path -LiteralPath $releaseZip -PathType Leaf)) { throw 'Release ZIP was not generated.' }
 
-Write-Output 'Release bundle created: .\release\dsh-sandbox-escalation-fix-0.1.2-alpha1.1-release.zip'
+Write-Output 'Release bundle created: .\release\dsh-sandbox-escalation-fix-0.1.2-alpha2-release.zip'
 exit $LASTEXITCODE

@@ -1,4 +1,4 @@
-# dsh-sandbox-escalation-fix（已支持 DSH 0.1.2-alpha.1 与 Desktop 2.0.3）
+# dsh-sandbox-escalation-fix（已支持 DSH 0.1.2-alpha.2 与 Desktop 2.0.3）
 
 [English](README.md) | 中文
 
@@ -6,7 +6,7 @@
 > 这是独立开发的社区插件，不是 DeepSeek 官方发布、维护或背书的插件。它不会修改 DeepSeek Harness 的核心代码。
 
 > [!CAUTION]
-> DSH `0.1.0-rc8`、`0.1.1-rc.1`、`0.1.1-rc.2` 和 `0.1.2-alpha.1` 已做部分改善，但仍使用注册表全局升级 Schema 和执行期校验。**建议用户先观察原生行为，仅在实际遇到本文所列的同模式升级、空 justification 或反复重试问题后再安装本插件。**
+> DSH `0.1.0-rc8`、`0.1.1-rc.1`、`0.1.1-rc.2`、`0.1.2-alpha.1` 和 `0.1.2-alpha.2` 已做部分改善，但仍使用注册表全局升级 Schema 和执行期校验。**建议用户先观察原生行为，仅在实际遇到本文所列的同模式升级、空 justification 或反复重试问题后再安装本插件。**
 
 > *如果该插件帮上你的忙了，还请点颗星让更多人看见~非常感谢 Thanks♪(･ω･)ﾉ*
 
@@ -23,7 +23,7 @@ Error: sandbox escalation to "workspace-write" is not strictly wider than this c
 <details>
   <summary>一些次要的说明</summary>
 
-  > DSH `0.1.1-rc.2` 的官方更新集中在图像处理：DeepSeek 适配器优先使用 Files API 上传图像、复用已上传文件，并根据模型要求自动缩放和转换图像格式。与本插件相关的 Sandbox 升级、Bash、Pwsh、ToolRuntime 和审批实现均与 `0.1.1-rc.1` 相同，因此 rc.2 没有修复本文问题，也不需要调整插件核心逻辑。<br> <br>DSH 从 `0.1.0-rc8` 到 `0.1.2-alpha.1` 改善了部署组合级广告：没有受限沙箱后端时，Bash、Pwsh、Write、Edit 不再公开升级字段。但它没有实现按 Session 投影 Schema。有沙箱后端时，工具仍会全局注册 `workspace-write` 和 `danger-full-access`；当前 Session 模式只在执行期读取，严格变宽仍在执行期校验，`approval=never` 只增加模型提示而不会删除字段。Native Tool Call 和 PTC Mode 又使用同一注册定义，因此本插件针对的问题仍可能出现<br> <br>本次兼容基于官方标签提交 `cd5ef8148158c3a752a658978873241fdf8e2bbc` 的源码契约审计。验证时 alpha.1 核心包尚未发布到公共 npm，因此本 Release 使用标签源码契约核对和 alpha.1 工具形状回归测试，不会把尚无法执行的 npm 包级测试描述为已完成<br> <br>插件 `0.1.1-desktop.2` 包含对 DSH Desktop `2.0.3` 的兼容。Desktop 2.0.3 会把 CommonJS 包清单覆盖解析限制在 Profile 的直接锚点，因此第三方插件自身无法读取宿主的 `@deepseek-ai/dsh-*/package.json`。当所有受检清单都被宿主统一隐藏时，本插件改用现有的严格运行时工具契约校验；部分清单可读、版本混装、清单损坏或工具定义不兼容时仍会拒绝运行<br> <br>插件也支持 `link:`、工作区软链接和外部插件目录等加载方式。当插件物理目录位于宿主依赖树之外时，兼容门禁可以从宿主当前工作目录读取完整的 DSH 包清单集合。每个候选解析根必须独立提供全部受检包；部分包集、跨解析根拼接、清单损坏和非模块缺失类加载错误仍会拒绝运行。`DSH_HOME` 只存放 Harness 配置和 Profile 数据，不是稳定的 Node.js 依赖根，因此不会被用于依赖解析。
+  > DSH `0.1.1-rc.2` 的官方更新集中在图像处理：DeepSeek 适配器优先使用 Files API 上传图像、复用已上传文件，并根据模型要求自动缩放和转换图像格式。与本插件相关的 Sandbox 升级、Bash、Pwsh、ToolRuntime 和审批实现均与 `0.1.1-rc.1` 相同，因此 rc.2 没有修复本文问题，也不需要调整插件核心逻辑。<br> <br>DSH `0.1.2-alpha.1` 改善了部署组合级广告：没有受限沙箱后端时，Bash、Pwsh、Write、Edit 不再公开升级字段。DSH `0.1.2-alpha.2` 仍没有实现按 Session 投影 Schema。其已发布 Sandbox 包继续明确说明 Schema 是 registry-global、Session 有效模式属于 per-call truth，升级目标仍全局包含 `workspace-write` 和 `danger-full-access`，严格变宽仍在执行期校验；`ctx.tools.schemas(scope)` 没有 Session 参数，`approval=never` 仍只增加模型提示而不会删除字段。Native Tool Call 和 PTC Mode 使用同一注册定义，因此本插件针对的问题仍可能出现<br> <br>本次兼容直接使用公共 npm 已发布的完整 `0.1.2-alpha.2` 官方包集作为开发和运行时集成基线。36 项测试与 TypeScript 构建覆盖真实的 Agent、ToolRuntime、Session Projection、Sandbox Policy、Approval、LLM、Scope、Session 和 System Prompt 契约<br> <br>插件 `0.1.1-desktop.2` 包含对 DSH Desktop `2.0.3` 的兼容。Desktop 2.0.3 会把 CommonJS 包清单覆盖解析限制在 Profile 的直接锚点，因此第三方插件自身无法读取宿主的 `@deepseek-ai/dsh-*/package.json`。当所有受检清单都被宿主统一隐藏时，本插件改用现有的严格运行时工具契约校验；部分清单可读、版本混装、清单损坏或工具定义不兼容时仍会拒绝运行<br> <br>插件也支持 `link:`、工作区软链接和外部插件目录等加载方式。当插件物理目录位于宿主依赖树之外时，兼容门禁可以从宿主当前工作目录读取完整的 DSH 包清单集合。每个候选解析根必须独立提供全部受检包；部分包集、跨解析根拼接、清单损坏和非模块缺失类加载错误仍会拒绝运行。`DSH_HOME` 只存放 Harness 配置和 Profile 数据，不是稳定的 Node.js 依赖根，因此不会被用于依赖解析。
 </details>
 
 ## 目录
@@ -190,16 +190,16 @@ dsh --profile <profile>
 
 ### Release ZIP 一键安装
 
-`0.1.2-alpha1.1` Release 保留 DSH `0.1.2-alpha.1`、Desktop 2.0.3 兼容和 PR #5 的软链接/外部插件目录解析增强，并加入 PR #8 的 Git 安装修复。Git 安装会直接使用仓库内预构建的 `lib`，不再要求配置 `allowBuilds`。包括 `v0.1.2-alpha1` 在内的旧 Release 均保留。新版 Release ZIP 解压后包含以下四个文件：
+`0.1.2-alpha2` Release 新增 DSH `0.1.2-alpha.2` 兼容，同时保留 Desktop 2.0.3、PR #5 的软链接/外部插件目录解析增强和 PR #8 的 Git 安装修复。包括 `v0.1.2-alpha1.1` 在内的旧 Release 均保留。新版 Release ZIP 解压后包含以下四个文件：
 
 ```text
-dsh-sandbox-escalation-fix-0.1.2-alpha1.1.tgz
+dsh-sandbox-escalation-fix-0.1.2-alpha2.tgz
 install-release.ps1
 uninstall-release.ps1
 RELEASE-USAGE.zh.md
 ```
 
-安装或升级前先完全关闭 DSH。执行脚本前，请确认系统已将 `dsh` 命令加入 PATH，且当前 DSH 使用的是 rc5、rc6、rc7、rc8、`0.1.1-rc.1`、`0.1.1-rc.2` 或 `0.1.2-alpha.1`。建议先实际复现同类错误，再决定是否安装。
+安装或升级前先完全关闭 DSH。执行脚本前，请确认系统已将 `dsh` 命令加入 PATH，且当前 DSH 使用的是 rc5、rc6、rc7、rc8、`0.1.1-rc.1`、`0.1.1-rc.2`、`0.1.2-alpha.1` 或 `0.1.2-alpha.2`。建议先实际复现同类错误，再决定是否安装。
 
 #### 安装到默认 Web Profile
 
@@ -233,7 +233,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\install-release.ps1" -Pro
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
 ```
 
-该脚本会先构建 `lib`，再执行 `npm pack` 生成 `.tgz`，最后在 `release` 目录生成 `dsh-sandbox-escalation-fix-0.1.2-alpha1.1-release.zip`。ZIP 内含 tarball、两个一键脚本和简明中文使用说明；上传 GitHub Release 时只需上传该 ZIP。
+该脚本会先构建 `lib`，再执行 `npm pack` 生成 `.tgz`，最后在 `release` 目录生成 `dsh-sandbox-escalation-fix-0.1.2-alpha2-release.zip`。ZIP 内含 tarball、两个一键脚本和简明中文使用说明；上传 GitHub Release 时只需上传该 ZIP。
 
 ### 升级已有安装
 
@@ -559,6 +559,8 @@ dsh web: http://127.0.0.1:3080
 
 自动测试直接使用真实 DSH `SessionStore`、`ToolRuntime`、`AgentRegistry`、`SandboxPolicyService`、`ApprovalService` 和 `SystemPrompt` 包，而不是只测试隔离 Mock。36 项测试覆盖：
 
+当前运行时集成基线是公共 npm 已发布的完整 DSH `0.1.2-alpha.2` 包集，并包含 alpha.2 新增的 `SessionProjectionService` 组合依赖。
+
 - 权限矩阵；
 - 精确同模式正规化；
 - Native Schema 投影；
@@ -615,7 +617,7 @@ import {
 | 复制了整个开发文件夹 | 可以保留，但必须删除目标插件目录内部的 `node_modules`，并确认没有多套一层同名目录 |
 | YAML 启动报错 | 检查 `- insert:` 是否顶格、是否误加了方括号或引号，以及缩进是否只使用空格 |
 | Git 安装被 `allowBuilds` 拦截 | 说明装到的是仍带 `prepare` 脚本的旧提交；固定到已移除 `prepare`、随仓库提交预构建 `lib` 的新提交 SHA 后重新安装 |
-| 启动时报版本错误 | 不要混装 rc.5、rc.6、rc.7、rc.8、0.1.1-rc.1、0.1.1-rc.2 与 0.1.2-alpha.1 包；让 Profile 中关键 `@deepseek-ai/dsh-*` 包保持同一版本 |
+| 启动时报版本错误 | 不要混装 rc.5、rc.6、rc.7、rc.8、0.1.1-rc.1、0.1.1-rc.2、0.1.2-alpha.1 与 0.1.2-alpha.2 包；让 Profile 中关键 `@deepseek-ai/dsh-*` 包保持同一版本 |
 | Agent 注册时报同名工具冲突 | 另一个插件已在 Agent Exact Scope 注册 `bash`、`pwsh`、`write` 或 `edit`，且未实现协作协议；只能卸载其中一个 |
 | 动态 Preset 隐藏了部分工具 | 这是正常行为；插件会镜像 `tools.restrict()`，限制解除后自动恢复包装 |
 | 日志出现动态协调警告 | 检查警告中目标工具的替换定义；其他工具和 Agent 会继续工作，兼容定义出现后自动恢复 |
@@ -624,12 +626,12 @@ import {
 ## 支持范围
 
 - Node.js `^22.19.0` 或 `>=24.0.0`
-- `@deepseek-ai/dsh-*` `0.1.0-rc.5`、`0.1.0-rc.6`、`0.1.0-rc.7`、`0.1.0-rc.8`、`0.1.1-rc.1`、`0.1.1-rc.2`、`0.1.2-alpha.1`
-- `@deepseek-ai/cordis` `4.0.1`
+- `@deepseek-ai/dsh-*` `0.1.0-rc.5`、`0.1.0-rc.6`、`0.1.0-rc.7`、`0.1.0-rc.8`、`0.1.1-rc.1`、`0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.2-alpha.2`
+- `@deepseek-ai/cordis` `^4.0.1`
 
 插件针对这些版本的公开 Scope、ToolRuntime、Sandbox Policy 与 Approval Service 契约构建。Agent 初次创建时，已可见的目标工具定义或同 Scope 包装协议不兼容会严格拒绝该 Agent 注册。
 
-启动时会读取关键 `@deepseek-ai/dsh-*` 包的实际版本；rc.5/rc.6/rc.7/rc.8/0.1.1-rc.1/0.1.1-rc.2/0.1.2-alpha.1 混装或未知版本会拒绝启动。目标工具同时省略两个升级字段时视为已经安全。运行期的 Preset 限制或 Provider 稳定删除会让包装器进入休眠；运行期替换为字段残缺或输出定义不兼容的工具时，只隔离对应 Agent 的对应工具并记录警告，不会终止 Host 进程，后续兼容定义出现时自动恢复。
+启动时会读取关键 `@deepseek-ai/dsh-*` 包的实际版本；rc.5/rc.6/rc.7/rc.8/0.1.1-rc.1/0.1.1-rc.2/0.1.2-alpha.1/0.1.2-alpha.2 混装或未知版本会拒绝启动。目标工具同时省略两个升级字段时视为已经安全。运行期的 Preset 限制或 Provider 稳定删除会让包装器进入休眠；运行期替换为字段残缺或输出定义不兼容的工具时，只隔离对应 Agent 的对应工具并记录警告，不会终止 Host 进程，后续兼容定义出现时自动恢复。
 
 ## 贡献者
 

@@ -3,11 +3,13 @@ import AgentRegistry from '@deepseek-ai/dsh-agent'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { CodeRuntime } from '@deepseek-ai/dsh-code-runtime'
 import type { CodeRunRequest, CodeRunResult } from '@deepseek-ai/dsh-code-runtime'
-import { CallId, HarnessError } from '@deepseek-ai/dsh-llm'
+import { HarnessError } from '@deepseek-ai/dsh-llm'
+import { ToolCallId } from '@deepseek-ai/dsh-llm/brand'
 import { escalationHintMarker, sandboxDenialMarker } from '@deepseek-ai/dsh-sandbox'
 import SandboxPolicyService, { setSandboxMode } from '@deepseek-ai/dsh-sandbox-policy'
 import { bindScopeParent, createScope } from '@deepseek-ai/dsh-scope'
 import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
+import SessionProjectionService from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition, ToolRunContext } from '@deepseek-ai/dsh-tools'
@@ -96,6 +98,7 @@ async function harness(): Promise<{
 }> {
   const ctx = new Context()
   await ctx.plugin(SessionStore)
+  await ctx.plugin(SessionProjectionService)
   await ctx.plugin(SystemPrompt, {})
   await ctx.plugin(ToolRuntime)
   await ctx.plugin(AgentRegistry)
@@ -137,6 +140,7 @@ async function harness(): Promise<{
 async function registeredHarness(): Promise<{ ctx: Context; agent: Agent }> {
   const ctx = new Context()
   await ctx.plugin(SessionStore)
+  await ctx.plugin(SessionProjectionService)
   await ctx.plugin(SystemPrompt, {})
   await ctx.plugin(ToolRuntime)
   await ctx.plugin(AgentRegistry)
@@ -160,6 +164,7 @@ describe('installed plugin', () => {
   it('starts through structural validation when Desktop hides every manifest', async () => {
     const ctx = new Context()
     await ctx.plugin(SessionStore)
+    await ctx.plugin(SessionProjectionService)
     await ctx.plugin(SystemPrompt, {})
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(AgentRegistry)
@@ -188,7 +193,7 @@ describe('installed plugin', () => {
       expect(schema.description).toBe('base.')
     }
     const result = await ctx.tools.execute({
-      callId: CallId('call'),
+      callId: ToolCallId('call'),
       name: 'pwsh',
       arguments: {
         value: 'x',
@@ -213,7 +218,7 @@ describe('installed plugin', () => {
   it('projects the same exact-scope schemas into the Code Mode SDK', async () => {
     const { ctx, agent } = await harness()
     await ctx.plugin(FakeRuntime)
-    const restore = agent.ctx.tools.presentAs('code')
+    const restore = agent.ctx.tools.presentAs('ptc')
     const sdk = (await ctx.systemPrompt.assemble({ scope: agent }))
       .sections.find(section => section.name === 'tools:sdk')?.text
     restore()
@@ -228,7 +233,7 @@ describe('installed plugin', () => {
     const replacementSeen: unknown[] = []
     replaceDelegate('pwsh', targetTool('pwsh', replacementSeen))
     const result = await ctx.tools.execute({
-      callId: CallId('replacement'),
+      callId: ToolCallId('replacement'),
       name: 'pwsh',
       arguments: { value: 'new' },
       agent,
@@ -253,7 +258,7 @@ describe('installed plugin', () => {
     expect((restored.parameters.properties as Record<string, unknown>).sandbox_permissions)
       .toBeUndefined()
     const result = await ctx.tools.execute({
-      callId: CallId('restriction-restored'),
+      callId: ToolCallId('restriction-restored'),
       name: 'pwsh',
       arguments: { value: 'restored' },
       agent,
@@ -274,7 +279,7 @@ describe('installed plugin', () => {
     replaceDelegate('pwsh', targetTool('pwsh', replacementSeen))
 
     const result = await ctx.tools.execute({
-      callId: CallId('stable-restored'),
+      callId: ToolCallId('stable-restored'),
       name: 'pwsh',
       arguments: { value: 'new' },
       agent,
@@ -288,6 +293,7 @@ describe('installed plugin', () => {
   it('discovers targets that were restricted during initial registration', async () => {
     const ctx = new Context()
     await ctx.plugin(SessionStore)
+    await ctx.plugin(SessionProjectionService)
     await ctx.plugin(SystemPrompt, {})
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(AgentRegistry)
@@ -399,6 +405,7 @@ describe('installed plugin', () => {
   it('rejects an incompatible exact-scope tool instead of silently stacking it', async () => {
     const ctx = new Context()
     await ctx.plugin(SessionStore)
+    await ctx.plugin(SessionProjectionService)
     await ctx.plugin(SystemPrompt, {})
     await ctx.plugin(ToolRuntime)
     await ctx.plugin(AgentRegistry)
@@ -448,7 +455,7 @@ describe('installed plugin', () => {
       },
     })
     const result = await ctx.tools.execute({
-      callId: CallId('cooperative'),
+      callId: ToolCallId('cooperative'),
       name: 'pwsh',
       arguments: { value: 'x' },
       agent,
@@ -472,7 +479,7 @@ describe('installed plugin', () => {
       execute: () => Promise.resolve(`${denial}\n${hint}\n[exit code: 1]`),
     })
     const result = await ctx.tools.execute({
-      callId: CallId('shell-hint'),
+      callId: ToolCallId('shell-hint'),
       name: 'pwsh',
       arguments: {},
       agent,
@@ -509,7 +516,7 @@ describe('installed plugin', () => {
       execute: () => Promise.resolve({ text: original }),
     })
     const result = await ctx.tools.execute({
-      callId: CallId('job-hint'),
+      callId: ToolCallId('job-hint'),
       name: 'job_output',
       arguments: {},
       agent,
@@ -530,7 +537,7 @@ describe('installed plugin', () => {
       execute: () => Promise.reject(new FsDeniedError()),
     })
     const execute = (parent?: symbol) => ctx.tools.execute({
-      callId: CallId(parent === undefined ? 'fs-native' : 'fs-code'),
+      callId: ToolCallId(parent === undefined ? 'fs-native' : 'fs-code'),
       name: 'write',
       arguments: {},
       agent,
