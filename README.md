@@ -6,7 +6,7 @@ English | [简体中文](README.zh.md)
 > This is an independent community plugin. It is not published, maintained, or endorsed by DeepSeek, and it does not modify DeepSeek Harness core packages.
 
 > [!CAUTION]
-> DSH `0.1.0-rc8`, `0.1.1-rc.1`, `0.1.1-rc.2`, `0.1.2-alpha.1`, `0.1.2-alpha.2`, `0.1.2-alpha.3`, and `0.1.2-alpha.4` partially improve this issue, but still use registry-global escalation schemas and execution-time validation. **Users should first observe the built-in behavior and install this plugin only after reproducing the same-mode escalation, blank justification, or retry-loop failures described below.**
+> The DSH official team has made some improvements spanning from version `DSH 0.1.0-rc8` through `0.1.2-alpha.4`, but still use registry-global escalation schemas and execution-time validation. **Users should first observe the built-in behavior and install this plugin only after reproducing the same-mode escalation, blank justification, or retry-loop failures described below.**
 
 > *If it's useful, please stars let more people can see it~ Thanks♪(･ω･)ﾉ*
 
