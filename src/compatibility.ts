@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 
 // 仅列入已完成真实包测试或标签源码契约审计的 DSH 版本，避免仅凭 semver 范围放行未知契约。
-export const SUPPORTED_DSH_VERSIONS = ['0.1.0-rc.5', '0.1.0-rc.6', '0.1.0-rc.7', '0.1.0-rc.8', '0.1.1-rc.1', '0.1.1-rc.2', '0.1.2-alpha.1', '0.1.2-alpha.2'] as const
+export const SUPPORTED_DSH_VERSIONS = ['0.1.0-rc.5', '0.1.0-rc.6', '0.1.0-rc.7', '0.1.0-rc.8', '0.1.1-rc.1', '0.1.1-rc.2', '0.1.2-alpha.1', '0.1.2-alpha.2', '0.1.2-alpha.3'] as const
 
 const DSH_PACKAGES = [
   '@deepseek-ai/dsh-agent',
