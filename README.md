@@ -1,4 +1,4 @@
-# dsh-sandbox-escalation-fix (DSH 0.1.2-alpha.4 and Desktop 2.0.3 supported)
+# dsh-sandbox-escalation-fix (DSH 0.1.2-alpha.5 and Desktop 2.0.3 supported)
 
 English | [简体中文](README.zh.md)
 
@@ -6,7 +6,7 @@ English | [简体中文](README.zh.md)
 > This is an independent community plugin. It is not published, maintained, or endorsed by DeepSeek, and it does not modify DeepSeek Harness core packages.
 
 > [!CAUTION]
-> The DSH official team has made some improvements spanning from version `DSH 0.1.0-rc8` through `0.1.2-alpha.4`, but still use registry-global escalation schemas and execution-time validation. **Users should first observe the built-in behavior and install this plugin only after reproducing the same-mode escalation, blank justification, or retry-loop failures described below.**
+> The DSH official team has made some improvements spanning from version `DSH 0.1.0-rc8` through `0.1.2-alpha.5`, but still use registry-global escalation schemas and execution-time validation. **Users should first observe the built-in behavior and install this plugin only after reproducing the same-mode escalation, blank justification, or retry-loop failures described below.**
 
 > *If it's useful, please stars let more people can see it~ Thanks♪(･ω･)ﾉ*
 
@@ -23,7 +23,7 @@ Error: sandbox escalation to "workspace-write" is not strictly wider than this c
 <details>
   <summary>Some minor explanations</summary>
 
-  > DSH `0.1.1-rc.2` focuses on image handling: the DeepSeek adapter prefers Files API uploads, reuses uploaded files, and automatically resizes or converts images for model requirements. The sandbox escalation, Bash, Pwsh, ToolRuntime, and approval implementations used by this plugin are unchanged from `0.1.1-rc.1`, so rc.2 neither fixes the issue described here nor requires a plugin logic change.<br> <br>DSH `0.1.2-alpha.1` improves composition-level advertising: Bash, Pwsh, Write, and Edit omit escalation fields when no confining sandbox backend is mounted. DSH `0.1.2-alpha.2` through `0.1.2-alpha.4` do not add session-aware schema projection. The published sandbox package still describes schemas as registry-global and the effective mode as per-call truth, keeps `workspace-write` and `danger-full-access` in the global target vocabulary, and checks strict widening during execution. `ctx.tools.schemas(scope)` and `sdkSchemas(scope)` still have no Session input, while `approval=never` adds a model instruction without removing escalation fields. Native tool calling and PTC Mode consume the same registered definition, so the issue addressed by this plugin remains possible. Alpha.4 replaces `Session.events` with `seq`, `eventAt()`, and `snapshotEvents()`; the official Approval, Sandbox Policy, and Session Projection packages adapt internally, while the escalation Schema contract remains unchanged.<br> <br>Compatibility with `0.1.2-alpha.4` uses the complete set of official public npm packages as the development and runtime integration baseline. The 36-test suite and TypeScript build run against the real alpha.4 Agent, ToolRuntime, Session Projection, Sandbox Policy, Approval, LLM, Scope, Session, and System Prompt contracts.<br> <br>Plugin `0.1.1-desktop.2` includes compatibility with DSH Desktop `2.0.3`. Desktop 2.0.3 deliberately limits its CommonJS package-manifest overlay to direct Profile anchors, so a third-party plugin cannot read host `@deepseek-ai/dsh-*/package.json` files from its own module. When all checked manifests are hidden uniformly, this plugin uses its existing strict runtime tool-contract validation instead. Partially readable manifests, mixed versions, malformed manifests, and incompatible tool definitions still fail closed.<br> <br>Linked and external plugin layouts are also supported. If `link:`, a workspace symlink, or an external plugin directory places the plugin outside the host dependency tree, the compatibility gate may read the complete DSH manifest set from the host working directory. One candidate root must provide the entire checked package set: partial roots, cross-root package mixing, malformed manifests, and non-resolution loader errors still fail closed. `DSH_HOME` is not treated as a dependency root because it stores Harness configuration and Profile data rather than a stable Node.js package tree.
+  > DSH `0.1.1-rc.2` focuses on image handling: the DeepSeek adapter prefers Files API uploads, reuses uploaded files, and automatically resizes or converts images for model requirements. The sandbox escalation, Bash, Pwsh, ToolRuntime, and approval implementations used by this plugin are unchanged from `0.1.1-rc.1`, so rc.2 neither fixes the issue described here nor requires a plugin logic change.<br> <br>DSH `0.1.2-alpha.1` improves composition-level advertising: Bash, Pwsh, Write, and Edit omit escalation fields when no confining sandbox backend is mounted. DSH `0.1.2-alpha.2` through `0.1.2-alpha.5` do not add session-aware schema projection. The published sandbox package still describes schemas as registry-global and the effective mode as per-call truth, keeps `workspace-write` and `danger-full-access` in the global target vocabulary, and checks strict widening during execution. `ctx.tools.schemas(scope)` and `sdkSchemas(scope)` still have no Session input, while `approval=never` adds a model instruction without removing escalation fields. Native tool calling and PTC Mode consume the same registered definition, so the issue addressed by this plugin remains possible. Alpha.4 replaces `Session.events` with `seq`, `eventAt()`, and `snapshotEvents()`; alpha.5 fixes application upgrade migration and session-title restoration. The alpha.4 and alpha.5 Sandbox, Tools, Sandbox Policy, Approval, Session, and Session Projection builds are byte-for-byte identical, so the escalation Schema contract remains unchanged.<br> <br>Compatibility with `0.1.2-alpha.5` uses the complete set of official public npm packages as the development and runtime integration baseline. The 36-test suite and TypeScript build run against the real alpha.5 Agent, ToolRuntime, Session Projection, Sandbox Policy, Approval, LLM, Scope, Session, and System Prompt contracts.<br> <br>Plugin `0.1.1-desktop.2` includes compatibility with DSH Desktop `2.0.3`. Desktop 2.0.3 deliberately limits its CommonJS package-manifest overlay to direct Profile anchors, so a third-party plugin cannot read host `@deepseek-ai/dsh-*/package.json` files from its own module. When all checked manifests are hidden uniformly, this plugin uses its existing strict runtime tool-contract validation instead. Partially readable manifests, mixed versions, malformed manifests, and incompatible tool definitions still fail closed.<br> <br>Linked and external plugin layouts are also supported. If `link:`, a workspace symlink, or an external plugin directory places the plugin outside the host dependency tree, the compatibility gate may read the complete DSH manifest set from the host working directory. One candidate root must provide the entire checked package set: partial roots, cross-root package mixing, malformed manifests, and non-resolution loader errors still fail closed. `DSH_HOME` is not treated as a dependency root because it stores Harness configuration and Profile data rather than a stable Node.js package tree.
 </details>
 
 ## Contents
@@ -159,11 +159,11 @@ The plugin listens to Agent creation, disposal, Preset changes, restrictions, an
 
 ### It won't lock you to a single DSH release
 
-The plugin supports DSH `0.1.0-rc.5`, `0.1.0-rc.6`, `0.1.0-rc.7`, `0.1.0-rc.8`, `0.1.1-rc.1`, `0.1.1-rc.2`, `0.1.2-alpha.1`, `0.1.2-alpha.2`, `0.1.2-alpha.3`, and `0.1.2-alpha.4`. At startup it verifies that the installed `@deepseek-ai/dsh-*` packages are consistent and supported. Incompatible tool definitions fail explicitly instead of producing silent misbehavior.
+The plugin supports DSH `0.1.0-rc.5`, `0.1.0-rc.6`, `0.1.0-rc.7`, `0.1.0-rc.8`, `0.1.1-rc.1`, `0.1.1-rc.2`, `0.1.2-alpha.1`, `0.1.2-alpha.2`, `0.1.2-alpha.3`, `0.1.2-alpha.4`, and `0.1.2-alpha.5`. At startup it verifies that the installed `@deepseek-ai/dsh-*` packages are consistent and supported. Incompatible tool definitions fail explicitly instead of producing silent misbehavior.
 
 ### It won't add configuration burden
 
-Zero configuration. Install it into the Profile you actually use and start DSH as before. The test suite contains 36 tests running against the complete official `0.1.2-alpha.4` package set, covering PTC Mode metadata, schema projection, dynamic restrictions, multi-Agent isolation, delegate and wrapper-protocol replacement, internal timeout-budget forwarding, failure-hint cleanup, and unload behavior.
+Zero configuration. Install it into the Profile you actually use and start DSH as before. The test suite contains 36 tests running against the complete official `0.1.2-alpha.5` package set, covering PTC Mode metadata, schema projection, dynamic restrictions, multi-Agent isolation, delegate and wrapper-protocol replacement, internal timeout-budget forwarding, failure-hint cleanup, and unload behavior.
 
 ### Compared with execution-only normalization
 
@@ -180,10 +180,10 @@ Zero configuration. Install it into the Profile you actually use and start DSH a
 ## Compatibility
 
 - Node.js `^22.19.0` or `>=24.0.0`
-- `@deepseek-ai/dsh-*` `0.1.0-rc.5`, `0.1.0-rc.6`, `0.1.0-rc.7`, `0.1.0-rc.8`, `0.1.1-rc.1`, `0.1.1-rc.2`, `0.1.2-alpha.1`, `0.1.2-alpha.2`, `0.1.2-alpha.3`, or `0.1.2-alpha.4`
+- `@deepseek-ai/dsh-*` `0.1.0-rc.5`, `0.1.0-rc.6`, `0.1.0-rc.7`, `0.1.0-rc.8`, `0.1.1-rc.1`, `0.1.1-rc.2`, `0.1.2-alpha.1`, `0.1.2-alpha.2`, `0.1.2-alpha.3`, `0.1.2-alpha.4`, or `0.1.2-alpha.5`
 - `@deepseek-ai/cordis` `^4.0.1`
 
-The plugin checks the installed DSH package versions at startup. Mixed rc.5/rc.6/rc.7/rc.8/0.1.1-rc.1/0.1.1-rc.2/0.1.2-alpha.1/0.1.2-alpha.2/0.1.2-alpha.3/0.1.2-alpha.4 installations and unknown DSH versions fail explicitly. An initially visible target with partial escalation fields or an incompatible output definition rejects that Agent's registration; a target that omits both escalation fields is accepted as already safe. During runtime, a Preset restriction or stable provider removal makes the wrapper dormant, while an incompatible replacement is isolated to that Agent and target tool and reported without terminating the Host process. A later compatible definition is wrapped automatically.
+The plugin checks the installed DSH package versions at startup. Mixed rc.5/rc.6/rc.7/rc.8/0.1.1-rc.1/0.1.1-rc.2/0.1.2-alpha.1/0.1.2-alpha.2/0.1.2-alpha.3/0.1.2-alpha.4/0.1.2-alpha.5 installations and unknown DSH versions fail explicitly. An initially visible target with partial escalation fields or an incompatible output definition rejects that Agent's registration; a target that omits both escalation fields is accepted as already safe. During runtime, a Preset restriction or stable provider removal makes the wrapper dormant, while an incompatible replacement is isolated to that Agent and target tool and reported without terminating the Host process. A later compatible definition is wrapped automatically.
 
 ## Install and Upgrade
 
@@ -197,9 +197,9 @@ You do not need to change the model configuration, Sandbox Mode, Approval Policy
 
 ### Release ZIP installation
 
-The `0.1.2-alpha4` Release adds DSH `0.1.2-alpha.4` compatibility while retaining Desktop 2.0.3, linked/external plugin resolution, Git installation support, and the BOM-free `cordis.patch.yml` from `0.1.2-alpha2.1`. Earlier packages may be exposed to repeated-BOM contamination when that file is rewritten by some Windows encoding tools; users should replace them with this Release. Download and extract `dsh-sandbox-escalation-fix-0.1.2-alpha4-release.zip`; it contains the tarball, one-click install and uninstall scripts, and a concise Chinese usage guide. Earlier Releases remain available.
+The `0.1.2-alpha5` Release adds DSH `0.1.2-alpha.5` compatibility while retaining Desktop 2.0.3, linked/external plugin resolution, Git installation support, and the BOM-free `cordis.patch.yml` from `0.1.2-alpha2.1`. Earlier packages may be exposed to repeated-BOM contamination when that file is rewritten by some Windows encoding tools; users should replace them with this Release. Download and extract `dsh-sandbox-escalation-fix-0.1.2-alpha5-release.zip`; it contains the tarball, one-click install and uninstall scripts, and a concise Chinese usage guide. Earlier Releases remain available.
 
-Close DSH before installing or upgrading the plugin. Ensure that `dsh` is available on PATH and that the running DSH version is rc5, rc6, rc7, rc8, `0.1.1-rc.1`, `0.1.1-rc.2`, `0.1.2-alpha.1`, `0.1.2-alpha.2`, `0.1.2-alpha.3`, or `0.1.2-alpha.4`. Users should install only after reproducing the affected behavior.
+Close DSH before installing or upgrading the plugin. Ensure that `dsh` is available on PATH and that the running DSH version is rc5, rc6, rc7, rc8, `0.1.1-rc.1`, `0.1.1-rc.2`, `0.1.2-alpha.1`, `0.1.2-alpha.2`, `0.1.2-alpha.3`, `0.1.2-alpha.4`, or `0.1.2-alpha.5`. Users should install only after reproducing the affected behavior.
 
 #### Install into the default Web Profile
 
@@ -223,7 +223,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\install-release.ps1" -Pro
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
 ```
 
-The script builds `lib`, packages the npm tarball, then creates `dsh-sandbox-escalation-fix-0.1.2-alpha4-release.zip` in `release/`. The generated directory is ignored by Git; upload only this ZIP as the GitHub Release asset.
+The script builds `lib`, packages the npm tarball, then creates `dsh-sandbox-escalation-fix-0.1.2-alpha5-release.zip` in `release/`. The generated directory is ignored by Git; upload only this ZIP as the GitHub Release asset.
 
 ### Upgrade an existing installation
 
@@ -365,7 +365,7 @@ The calls should complete without `sandbox_permissions` argument errors or impos
 
 The 36-test suite uses real DSH `SessionStore`, `ToolRuntime`, `AgentRegistry`, `SandboxPolicyService`, `ApprovalService`, and `SystemPrompt` packages rather than only isolated mocks. It covers the permission matrix, schema projection, PTC Mode SDK generation, dynamic restrictions, multi-Agent isolation, delegate replacement, cooperative wrappers, hint filtering, version checks, and unload behavior.
 
-The complete official `0.1.2-alpha.4` package set is the current runtime integration baseline, including Session Projection, Agent, ToolRuntime, Sandbox Policy, Approval, LLM, Scope, Session, and System Prompt packages. Automated tests do not completely replace E2E validation with a real model provider.
+The complete official `0.1.2-alpha.5` package set is the current runtime integration baseline, including Session Projection, Agent, ToolRuntime, Sandbox Policy, Approval, LLM, Scope, Session, and System Prompt packages. Automated tests do not completely replace E2E validation with a real model provider.
 
 ### Wrapper Conflicts
 
