@@ -47,7 +47,7 @@ function visibleDelegate(ctx: Context, agent: Agent, name: TargetToolName): Tool
   return ctx.tools.get(name, agent)
 }
 
-function ownLayer(ctx: Context, agent: Agent): WrapperLayer {
+function ownLayer(ctx: Context, agent: Agent, toolName: TargetToolName): WrapperLayer {
   return {
     owner: PLUGIN_OWNER,
     priority: 100,
@@ -59,7 +59,12 @@ function ownLayer(ctx: Context, agent: Agent): WrapperLayer {
       return projectEscalationParameters(value, escalationPolicyFor(ctx, agent).viableTargets)
     },
     execute(args: unknown, exec: Parameters<ToolDefinition['execute']>[1], next: (args: unknown) => Promise<unknown>): Promise<unknown> {
-      return next(normalizeEscalationArguments(args, escalationPolicyFor(ctx, exec.agent ?? agent).effectiveMode))
+      const callAgent = exec.agent ?? agent
+      const policy = ctx.sandboxPolicy.resolve({ session: callAgent.session })
+      return next(normalizeEscalationArguments(args, policy.mode, {
+        toolName,
+        workspaceRoot: policy.workspaceRoot,
+      }))
     },
   }
 }
@@ -261,11 +266,11 @@ export class Supervisor {
       if (protocol !== undefined) {
         target.attachment = {
           kind: 'cooperative',
-          release: protocol.contribute(ownLayer(this.ctx, agent)),
+          release: protocol.contribute(ownLayer(this.ctx, agent, target.name)),
         }
       } else {
         const binding = target.binding
-          ?? createWrapperBinding(delegate, ownLayer(this.ctx, agent))
+          ?? createWrapperBinding(delegate, ownLayer(this.ctx, agent, target.name))
         if (target.binding === undefined) {
           target.binding = binding
         } else {

@@ -215,6 +215,31 @@ describe('installed plugin', () => {
     await ctx.fiber.dispose()
   })
 
+  it('runs workspace write/edit without a false full-access escalation', async () => {
+    const { ctx, agent, seen } = await harness()
+    setSandboxMode(agent.session, 'workspace-write')
+    setApprovalPolicy(agent.session, 'ask')
+
+    for (const name of ['write', 'edit']) {
+      const result = await ctx.tools.execute({
+        callId: ToolCallId(`workspace-${name}`),
+        name,
+        arguments: {
+          value: name,
+          file_path: 'permission-test.txt',
+          sandbox_permissions: 'danger-full-access',
+          justification: 'modify the selected workspace file',
+        },
+        agent,
+        signal: new AbortController().signal,
+      })
+      expect(result.isError).toBe(false)
+    }
+    expect(seen).toContainEqual({ value: 'write', file_path: 'permission-test.txt' })
+    expect(seen).toContainEqual({ value: 'edit', file_path: 'permission-test.txt' })
+    await ctx.fiber.dispose()
+  })
+
   it('projects the same exact-scope schemas into the Code Mode SDK', async () => {
     const { ctx, agent } = await harness()
     await ctx.plugin(FakeRuntime)

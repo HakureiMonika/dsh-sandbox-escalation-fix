@@ -1,3 +1,6 @@
+import { mkdtempSync, rmSync, symlinkSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { normalizeEscalationArguments } from '../src/argument-normalization.ts'
 import {
@@ -58,6 +61,71 @@ describe('execution compatibility', () => {
     expect(normalizeEscalationArguments(args, 'workspace-write')).toBe(args)
   })
 
+  it('removes false full-access only from workspace write/edit paths', () => {
+    const args = Object.freeze({
+      file_path: 'permission-test.txt',
+      content: 'updated',
+      sandbox_permissions: 'danger-full-access',
+      justification: 'edit the workspace file',
+    })
+    const context = { toolName: 'write', workspaceRoot: process.cwd() }
+
+    expect(normalizeEscalationArguments(args, 'workspace-write', context)).toEqual({
+      file_path: 'permission-test.txt',
+      content: 'updated',
+    })
+    expect(normalizeEscalationArguments(
+      { ...args, file_path: '../outside.txt' },
+      'workspace-write',
+      context,
+    )).toEqual({ ...args, file_path: '../outside.txt' })
+    expect(normalizeEscalationArguments(
+      args,
+      'workspace-write',
+      { ...context, toolName: 'pwsh' },
+    )).toBe(args)
+  })
+
+  it('keeps escalation when a workspace path resolves through an external symlink', () => {
+    const root = mkdtempSync(join(tmpdir(), 'dsh-escalation-root-'))
+    const outside = mkdtempSync(join(tmpdir(), 'dsh-escalation-outside-'))
+    try {
+      symlinkSync(outside, join(root, 'external'), process.platform === 'win32' ? 'junction' : 'dir')
+      const args = {
+        file_path: 'external/out.txt',
+        content: 'updated',
+        sandbox_permissions: 'danger-full-access',
+        justification: 'edit through a link',
+      }
+      expect(normalizeEscalationArguments(args, 'workspace-write', {
+        toolName: 'write',
+        workspaceRoot: root,
+      })).toBe(args)
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+      rmSync(outside, { recursive: true, force: true })
+    }
+  })
+
+  it('keeps escalation when the workspace root no longer exists', () => {
+    const parent = mkdtempSync(join(tmpdir(), 'dsh-escalation-missing-root-'))
+    const root = join(parent, 'removed-workspace')
+    const args = {
+      file_path: 'out.txt',
+      content: 'updated',
+      sandbox_permissions: 'danger-full-access',
+      justification: 'edit an unconfirmed workspace file',
+    }
+    try {
+      expect(normalizeEscalationArguments(args, 'workspace-write', {
+        toolName: 'write',
+        workspaceRoot: root,
+      })).toBe(args)
+    } finally {
+      rmSync(parent, { recursive: true, force: true })
+    }
+  })
+
   it('accepts an already-safe target and rejects a partial escalation schema', () => {
     expect(() => validateTargetTool({
       name: 'pwsh',
@@ -104,6 +172,8 @@ describe('execution compatibility', () => {
     expect(() => validateDshVersionSet({ tools: '0.1.2-alpha.4', sandbox: '0.1.2-alpha.4' }))
       .not.toThrow()
     expect(() => validateDshVersionSet({ tools: '0.1.2-alpha.5', sandbox: '0.1.2-alpha.5' }))
+      .not.toThrow()
+    expect(() => validateDshVersionSet({ tools: '0.1.2-rc.1', sandbox: '0.1.2-rc.1' }))
       .not.toThrow()
     expect(() => validateDshVersionSet({ tools: '0.1.0-rc.5', sandbox: '0.1.0-rc.6' }))
       .toThrow(/mixed DSH package versions/)
