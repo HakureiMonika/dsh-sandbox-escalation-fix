@@ -194,12 +194,14 @@ dsh --profile <profile>
 
 ### Release ZIP 一键安装
 
-`0.1.3-alpha1` Release 新增 DSH `0.1.3-alpha.1` 兼容，同时保留 Desktop 2.0.3、PR #5 的软链接/外部插件目录解析增强、PR #8 的 Git 安装修复和 `0.1.2-alpha2.1` 的无 BOM 配置。部分更早版本在 Windows 编码工具重复写回 `cordis.patch.yml` 时可能出现多 BOM 污染，建议及时更换为本版本；旧 Release 仍会保留。新版 Release ZIP 解压后包含以下四个文件：
+`0.1.3-alpha1-win-linux` Release 新增 DSH `0.1.3-alpha.1` 兼容，并正式支持 Linux/macOS：插件本体为纯 JavaScript、无平台限制；Release ZIP 在 Windows 脚本（`.ps1`）之外新增 Linux/macOS 安装与卸载脚本（`.sh`）。完整流程已在 Ubuntu 24.04 实机验证（Landlock 后端）：测试套件 40/40 通过、`.sh` 脚本安装进 `web` Profile、Schema 投影生效、沙箱与审批行为和 Windows 一致。本版同时保留 Desktop 2.0.3、PR #5 的软链接/外部插件目录解析增强、PR #8 的 Git 安装修复和 `0.1.2-alpha2.1` 的无 BOM 配置。部分更早版本在 Windows 编码工具重复写回 `cordis.patch.yml` 时可能出现多 BOM 污染，建议及时更换为本版本；旧 Release 仍会保留。新版 Release ZIP 解压后包含以下六个文件：
 
 ```text
-dsh-sandbox-escalation-fix-0.1.3-alpha1.tgz
+dsh-sandbox-escalation-fix-0.1.3-alpha1-win-linux.tgz
 install-release.ps1
 uninstall-release.ps1
+install-release.sh
+uninstall-release.sh
 RELEASE-USAGE.zh.md
 ```
 
@@ -207,11 +209,19 @@ RELEASE-USAGE.zh.md
 
 #### 安装到默认 Web Profile
 
-在 Release 目录打开 PowerShell，执行：
+Windows 在 Release 目录打开 PowerShell，执行：
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\install-release.ps1"
 ```
+
+Linux/macOS 在 Release 目录执行：
+
+```sh
+sh ./install-release.sh
+```
+
+（ZIP 解压不保留执行位，因此使用 `sh ./` 方式调用。）
 
 脚本会定位同目录中唯一的 `.tgz` 文件，然后执行：
 
@@ -229,6 +239,12 @@ DSH CLI 会将插件安装到 `web` Profile，并在 pnpm 成功后自动把插�
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\install-release.ps1" -Profile headless
 ```
 
+Linux/macOS 将 Profile 名作为第一个参数传入：
+
+```sh
+sh ./install-release.sh headless
+```
+
 #### 发布者构建 Release 目录
 
 在源码根目录执行：
@@ -237,7 +253,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\install-release.ps1" -Pro
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
 ```
 
-该脚本会先构建 `lib`，再执行 `npm pack` 生成 `.tgz`，最后在 `release` 目录生成 `dsh-sandbox-escalation-fix-0.1.3-alpha1-release.zip`。ZIP 内含 tarball、两个一键脚本和简明中文使用说明；上传 GitHub Release 时只需上传该 ZIP。
+该脚本会先构建 `lib`，再执行 `npm pack` 生成 `.tgz`，最后在 `release` 目录生成 `dsh-sandbox-escalation-fix-0.1.3-alpha1-win-linux-release.zip`。ZIP 内含 tarball、两个一键脚本和简明中文使用说明；上传 GitHub Release 时只需上传该 ZIP。
 
 ### 升级已有安装
 
@@ -295,7 +311,7 @@ dsh --profile <profile> --dump-config
 
 ## 卸载
 
-使用 Release ZIP 时，可在解压目录执行：
+使用 Release ZIP 时，Windows 可在解压目录执行：
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\uninstall-release.ps1"
@@ -305,6 +321,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\uninstall-release.ps1"
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\uninstall-release.ps1" -Profile headless
+```
+
+Linux/macOS 在解压目录执行（Profile 名作为第一个参数）：
+
+```sh
+sh ./uninstall-release.sh
+sh ./uninstall-release.sh headless
 ```
 
 等效的 DSH CLI 命令为：
@@ -635,6 +658,7 @@ import {
 - Node.js `^22.19.0` 或 `>=24.0.0`
 - `@deepseek-ai/dsh-*` `0.1.0-rc.5`、`0.1.0-rc.6`、`0.1.0-rc.7`、`0.1.0-rc.8`、`0.1.1-rc.1`、`0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.2-alpha.2`、`0.1.2-alpha.3`、`0.1.2-alpha.4`、`0.1.2-alpha.5`、`0.1.2-rc.1`、`0.1.3-alpha.1`
 - `@deepseek-ai/cordis` `^4.0.1`
+- 操作系统：Windows、Linux、macOS。插件本体为纯 JavaScript，无平台限制；Linux/macOS 上沙箱的实际生效依赖 DSH 宿主可用的沙箱后端（Linux 为 `bwrap` 或启用了 Landlock 的内核 5.13+，macOS 为 Seatbelt），由 DSH 运行时自动探测；后端不可用时 DSH 会拒绝执行而不是绕过沙箱。插件的权限投影与参数正规化不依赖特定沙箱后端。
 
 插件针对这些版本的公开 Scope、ToolRuntime、Sandbox Policy 与 Approval Service 契约构建。Agent 初次创建时，已可见的目标工具定义或同 Scope 包装协议不兼容会严格拒绝该 Agent 注册。
 
