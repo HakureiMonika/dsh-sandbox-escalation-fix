@@ -2,7 +2,7 @@
 
 ## 版本内容
 
-- 正式支持 Linux/macOS：Release ZIP 新增 `.sh` 安装与卸载脚本，插件本体为纯 JavaScript、无平台限制；已在 Ubuntu 24.04 实机（Landlock 沙箱后端）完成安装、Schema 投影与沙箱/审批行为验证。
+- 正式支持 Linux：Release ZIP 新增 POSIX 安装与卸载脚本（`.sh`），插件本体为纯 JavaScript、无平台限制；已在 Ubuntu 24.04 实机（Landlock 沙箱后端）完成安装、Schema 投影与沙箱/审批行为验证。`.sh` 脚本预期同样适用于 macOS，但尚未在真实 Mac 上测试。
 - 支持 DSH Desktop `2.0.3` 隐藏宿主包清单时的严格结构校验回退。
 - 支持通过 `link:`、工作区软链接或外部插件目录加载插件。
 - 支持 DSH `0.1.3-alpha.1`，本插件会按每个 Session 的实际 Sandbox Mode 与 Approval Policy 投影升级字段。
