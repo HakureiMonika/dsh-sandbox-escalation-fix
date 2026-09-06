@@ -1,6 +1,10 @@
-# dsh-sandbox-escalation-fix（已支持 DSH 0.1.3-alpha.1 与 Desktop 2.0.3）
+# dsh-sandbox-escalation-fix（已支持 0.1.3-alpha.1）
 
 [English](README.md) | 中文
+
+目前已支持的最新 DSH 版本：`0.1.3-alpha.1`（完整列表见[支持范围](#支持范围)）<br>
+目前已支持的 Desktop 版本：`2.0.3`<br>
+目前已支持的系统：`Windows` & `Linux`（实机验证）& `macOS`（理论支持，未实测）
 
 > [!IMPORTANT]
 > 这是独立开发的社区插件，不是 DeepSeek 官方发布、维护或背书的插件。它不会修改 DeepSeek Harness 的核心代码。
@@ -31,10 +35,22 @@ Error: sandbox escalation to "workspace-write" is not strictly wider than this c
 - [这是什么？](#这是什么)
 - [它能解决什么问题？](#它能解决什么问题)
 - [安装前后对比](#安装前后对比)
-- [为什么选择它？](#为什么选择它)
-- [安装与升级](#安装与升级)
+- 快速开始 & 如何安装
+  - [Release ZIP 一键安装](#release-zip-一键安装)
+    - [安装到默认 Web Profile](#安装到默认-web-profile)
+    - [安装到其他 Profile](#安装到其他-profile)
+    - [发布者构建 Release 目录](#发布者构建-release-目录)
+  - [通过命令行安装](#通过命令行安装)
+  - [手动覆盖安装（Windows）](#手动覆盖安装windows)
+    - [安装后检查表](#安装后检查表)
+    - [手动更新](#手动更新)
+    - [手动回退](#手动回退)
+- 如何升级 / 维护
+  - [升级已有安装](#升级已有安装)
+    - [通过 GitHub Commit 安装的用户](#通过-github-commit-安装的用户)
+    - [手动安装到 Web Profile 的用户](#手动安装到-web-profile-的用户)
 - [卸载](#卸载)
-- [手动覆盖安装（Windows）](#手动覆盖安装windows)
+- [为什么选择它？](#为什么选择它)
 - [验证、行为与插件协作](#验证行为与插件协作)
 - [故障排查](#故障排查)
 - [支持范围](#支持范围)
@@ -81,6 +97,377 @@ DSH 工具注册时会公开静态的升级字段，但真正可以请求的升�
 安装插件后，同一模型可以连续执行 Edit、Read、Pwsh、格式化、测试、Lint 和 Type Check，不再进入无效升级循环。
 
 ![安装后：Edit、Read 与 Pwsh 连续完成多步骤开发工作流](assets/after-successful-tools.png)
+
+## 快速开始 & 如何安装
+
+插件为零配置修复。推荐下载 Release ZIP，通过脚本安装到实际使用的 Profile；安装后按原方式启动 DSH：
+
+```sh
+dsh --profile <profile>
+```
+
+无需修改模型配置、Sandbox Mode、Approval Policy 或 Agent Preset。插件会按每个 Session 的当前权限状态动态决定模型可见参数。
+
+### Release ZIP 一键安装
+
+`0.1.3-alpha1-win-linux` Release 新增 DSH `0.1.3-alpha.1` 兼容，并正式支持 Linux：插件本体为纯 JavaScript、无平台限制；Release ZIP 在 Windows 脚本（`.ps1`）之外新增 POSIX 安装与卸载脚本（`.sh`）。完整流程已在 Ubuntu 24.04 实机验证（Landlock 后端）：测试套件 40/40 通过、`.sh` 脚本安装进 `web` Profile、Schema 投影生效、沙箱与审批行为和 Windows 一致。`.sh` 脚本预期同样适用于 macOS，但尚未在真实 Mac 上测试。本版同时保留 Desktop 2.0.3、PR #5 的软链接/外部插件目录解析增强、PR #8 的 Git 安装修复和 `0.1.2-alpha2.1` 的无 BOM 配置。部分更早版本在 Windows 编码工具重复写回 `cordis.patch.yml` 时可能出现多 BOM 污染，建议及时更换为本版本；旧 Release 仍会保留。新版 Release ZIP 解压后包含以下六个文件：
+
+```text
+dsh-sandbox-escalation-fix-0.1.3-alpha1-win-linux.tgz
+install-release.ps1
+uninstall-release.ps1
+install-release.sh
+uninstall-release.sh
+RELEASE-USAGE.zh.md
+```
+
+安装或升级前先完全关闭 DSH。执行脚本前，请确认系统已将 `dsh` 命令加入 PATH，且当前 DSH 使用的是 rc5、rc6、rc7、rc8、`0.1.1-rc.1`、`0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.2-alpha.2`、`0.1.2-alpha.3`、`0.1.2-alpha.4`、`0.1.2-alpha.5`、`0.1.2-rc.1` 或 `0.1.3-alpha.1`。建议先实际复现同类错误，再决定是否安装。
+
+#### 安装到默认 Web Profile
+
+Windows 在 Release 目录打开 PowerShell，执行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\install-release.ps1"
+```
+
+Linux/macOS 在 Release 目录执行：
+
+```sh
+sh ./install-release.sh
+```
+
+（ZIP 解压不保留执行位，因此使用 `sh ./` 方式调用。）
+
+脚本会定位同目录中唯一的 `.tgz` 文件，然后执行：
+
+```powershell
+dsh plugin --profile web add <tgz-absolute-path>
+```
+
+DSH CLI 会将插件安装到 `web` Profile，并在 pnpm 成功后自动把插件的 `cordis.patch.yml` 加入 Profile Bundle 层。安装完成后重启 DSH。
+
+#### 安装到其他 Profile
+
+例如安装到 `headless`：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\install-release.ps1" -Profile headless
+```
+
+Linux/macOS 将 Profile 名作为第一个参数传入：
+
+```sh
+sh ./install-release.sh headless
+```
+
+#### 发布者构建 Release 目录
+
+在源码根目录执行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
+```
+
+该脚本会先构建 `lib`，再执行 `npm pack` 生成 `.tgz`，最后在 `release` 目录生成 `dsh-sandbox-escalation-fix-0.1.3-alpha1-win-linux-release.zip`。ZIP 内含 tarball、两个一键脚本和简明中文使用说明；上传 GitHub Release 时只需上传该 ZIP。
+
+### 通过命令行安装
+
+建议从可信仓库锁定 Commit SHA 安装到指定 Profile：
+
+```sh
+dsh plugin --profile <profile> add github:<owner>/dsh-sandbox-escalation-fix#<commit-sha>
+```
+
+也可以从本地目录安装：
+
+```sh
+dsh plugin --profile <profile> add D:/deepseek-harness/plugins/dsh-sandbox-escalation-fix
+```
+
+本包已移除 `prepare` 等安装期构建脚本：Git 安装直接使用仓库内提交的预构建 `lib`，pnpm 不会要求 `allowBuilds` 白名单。旧版本安装时曾需要允许构建；如果 Profile 的 `pnpm-workspace.yaml` 里还残留 `dsh-sandbox-escalation-fix@https://codeload.github.com/...` 条目，升级到新版后可以删除。
+
+重新执行安装命令后检查最终组合：
+
+```sh
+dsh --profile <profile> --dump-config
+```
+
+输出中应包含 `dsh-sandbox-escalation-fix` 层和 `sandbox-escalation-fix` 行。
+
+### 手动覆盖安装（Windows）
+
+这是 Windows 下不使用插件安装命令的推荐方式。它只修改指定 Profile，不修改 DSH 安装目录或核心包。
+
+需要更短的逐文件教程时，可查看 [奶龙也能看懂的食用说明.txt](奶龙也能看懂的食用说明.txt)；其英文对应版为 [Tutorials that even Peppa Pig can understand](Tutorials%20that%20even%20Peppa%20Pig%20can%20understand)。
+
+#### 开始前先确认
+
+- 本教程中的“Profile 根目录”不是 `.dsh`，而是当前实际启动的 Profile 目录。
+- 使用 Web Profile 时，Profile 根目录就是 `%USERPROFILE%\.dsh\profiles\web`。
+- 要修改的是 `profiles\web\cordis.patch.yml`；`.dsh` 根目录下没有该文件并不异常。
+- 可以直接复制整个 `dsh-sandbox-escalation-fix` 文件夹，但复制后必须删除插件目录内部的 `node_modules`。
+- Profile Patch 使用 YAML 块列表；不要给配置加引号，也不要自行添加 `[` 或 `]`。
+
+#### 1. 关闭 DSH
+
+退出正在运行的 Web、桌面端或 Headless 进程，避免旧插件文件仍被 Node.js 占用。
+
+#### 2. 打开 Profile 目录
+
+默认 Harness Home 是：
+
+```text
+C:\Users\<你的用户名>\.dsh
+```
+
+目标 Profile 目录是：
+
+```text
+C:\Users\<你的用户名>\.dsh\profiles\<profile>
+```
+
+例如 Web Profile 通常是：
+
+```text
+C:\Users\<你的用户名>\.dsh\profiles\web
+```
+
+可直接在 Windows 资源管理器地址栏输入：
+
+```text
+%USERPROFILE%\.dsh\profiles\web
+```
+
+如果配置过 `DSH_HOME`，请把上面的 `C:\Users\<你的用户名>\.dsh` 换成实际目录。若 `profiles\web` 尚不存在，先正常启动一次 DSH Web，让它初始化 Profile。
+
+注意：这里说的是 Profile 根目录 `%USERPROFILE%\.dsh\profiles\web`，**不是** `%USERPROFILE%\.dsh`。看到 `.dsh` 根目录没有 `cordis.patch.yml` 是正常的，不需要创建；继续进入 `profiles\web` 修改其中已有的文件即可。
+
+#### 3. 覆盖插件目录
+
+在目标 Profile 中创建以下目录：
+
+```text
+<Profile目录>\node_modules\dsh-sandbox-escalation-fix
+```
+
+Web Profile 的默认目标目录是：
+
+```text
+%USERPROFILE%\.dsh\profiles\web\node_modules\dsh-sandbox-escalation-fix
+```
+
+如果该目录已经存在，先将整个目录改名为 `dsh-sandbox-escalation-fix.backup`。
+
+然后从本项目目录复制以下内容到新的 `dsh-sandbox-escalation-fix` 目录：
+
+```text
+package.json
+cordis.patch.yml
+README.md
+lib\
+```
+
+也可以直接把整个 `dsh-sandbox-escalation-fix` 文件夹复制到 Profile 的 `node_modules`，但复制完成后必须删除：
+
+```text
+<Profile目录>\node_modules\dsh-sandbox-escalation-fix\node_modules
+```
+
+嵌套的 `node_modules` 可能携带另一套 Cordis 和 DSH 包，导致 Scope、Service 或错误类型来自不同实例。`src`、`tests`、`package-lock.json` 和 TypeScript 配置留在目标目录通常不会影响运行，只是没有必要。
+
+复制完成后的结构应为：
+
+```text
+<Profile目录>\
+├── cordis.patch.yml
+├── package.json
+└── node_modules\
+    └── dsh-sandbox-escalation-fix\
+        ├── package.json
+        ├── cordis.patch.yml
+        ├── README.md
+        └── lib\
+            ├── index.mjs
+            ├── index.d.mts
+            ├── wrapper-protocol.mjs
+            └── wrapper-protocol.d.mts
+```
+
+注意：
+
+- 不要复制本项目的 `node_modules`。
+- 不需要复制 `src`、`tests`、`tsconfig.json` 或构建工具配置。
+- 手动安装包必须已经包含 `lib\index.mjs`；只有源码而没有 `lib` 的 ZIP 不能直接使用此方法。
+- 不要把插件自己的 `cordis.patch.yml` 直接覆盖到 Profile 根目录；Profile 根目录中的同名文件可能包含其他用户配置，必须按下一步手动合并。
+- 确认没有多套一层同名目录。
+
+正确入口是：
+
+```text
+<Profile目录>\node_modules\dsh-sandbox-escalation-fix\package.json
+<Profile目录>\node_modules\dsh-sandbox-escalation-fix\lib\index.mjs
+```
+
+以下结构是错误的：
+
+```text
+<Profile目录>\node_modules\dsh-sandbox-escalation-fix\dsh-sandbox-escalation-fix\package.json
+```
+
+更新已经安装的版本时，请直接按照[如何升级 / 维护](#如何升级--维护)操作，不要重复添加 Profile Patch。
+
+#### 4. 修改 Profile Patch
+
+用记事本或其他纯文本编辑器打开：
+
+```text
+<Profile目录>\cordis.patch.yml
+```
+
+如果文件内容只有 `[]`，将其完整替换为：
+
+```yaml
+- insert:
+    - id: sandbox-escalation-fix
+      name: dsh-sandbox-escalation-fix
+```
+
+例如，初始文件为：
+
+```yaml
+# Your patch layer for this dsh profile, applied after every bundle layer:
+# a top-level YAML array of loader patch entries (id-targeted config
+# overrides, disables, and insert lists; `!!js` expressions allowed).
+[]
+```
+
+修改后的完整文件应为：
+
+```yaml
+# Your patch layer for this dsh profile, applied after every bundle layer:
+# a top-level YAML array of loader patch entries (id-targeted config
+# overrides, disables, and insert lists; `!!js` expressions allowed).
+- insert:
+    - id: sandbox-escalation-fix
+      name: dsh-sandbox-escalation-fix
+```
+
+顶部注释可以保留，只替换最后一行 `[]`。
+
+以下两种写法都**不要**使用：
+
+```yaml
+[- insert:
+    - id: sandbox-escalation-fix
+      name: dsh-sandbox-escalation-fix
+```
+
+```yaml
+- insert:
+    - id: sandbox-escalation-fix
+      name: dsh-sandbox-escalation-fix]
+```
+
+正确写法不带方括号、不带引号，且 `- insert:` 必须顶格。请使用空格缩进，不要使用 Tab。
+
+如果文件已有其他配置，不要覆盖原内容。在文件末尾追加同一个顶层 Patch：
+
+```yaml
+- insert:
+    - id: sandbox-escalation-fix
+      name: dsh-sandbox-escalation-fix
+```
+
+同一个文件中只能保留一个 `id: sandbox-escalation-fix`，不要重复追加。此手动方式不要求修改 Profile 的 `package.json`，因为插件由 Profile Patch 直接加载。
+
+#### 5. 重启并验证
+
+按原来的方式启动该 Profile，新建 Session，然后在 All Access 下要求模型执行简单 Shell 命令或写入文件。
+
+修复生效时，OAI 系列模型不再因为重复发送 `danger-full-access` 升级参数而导致工具调用失败。若仍看到旧行为，请确认修改的是当前实际启动的 Profile，并彻底退出 DSH 后重新启动。
+
+#### 安装后检查表
+
+- [ ] `profiles\web\cordis.patch.yml` 中只有一个 `id: sandbox-escalation-fix`。
+- [ ] Patch 中没有 `[`、`]` 或包住整段配置的引号。
+- [ ] 插件的 `package.json` 直接位于 `node_modules\dsh-sandbox-escalation-fix` 下。
+- [ ] 插件目录包含 `lib\index.mjs`。
+- [ ] 插件目录内部不存在第二个 `node_modules`。
+- [ ] DSH 已完全退出并重启。
+- [ ] 测试使用的是重启后新建的 Session。
+
+#### 手动更新
+
+关闭 DSH，将新的 `package.json`、`cordis.patch.yml`、`README.md` 和整个 `lib` 目录覆盖到 Profile 的插件目录即可。Profile Patch 已存在时不需要再次修改。
+
+#### 手动回退
+
+1. 关闭 DSH。
+2. 从 `<Profile目录>\cordis.patch.yml` 删除 `sandbox-escalation-fix` 的整个 `- insert:` 块。
+3. 删除 `<Profile目录>\node_modules\dsh-sandbox-escalation-fix`。
+4. 如果保留了 `.backup`，将其改回原名；否则直接重启 DSH。
+
+## 如何升级 / 维护
+
+### 升级已有安装
+
+升级前必须关闭 DSH。插件包名、Bundle ID 和 Profile Patch 配置行均未改变，已经安装旧版的用户不需要再次修改 `cordis.patch.yml`。
+
+#### 通过 GitHub Commit 安装的用户
+
+将原安装命令中的 Commit SHA 换成新的、已经审核过的 SHA，再执行同一条命令：
+
+```sh
+dsh plugin --profile <profile> add github:<owner>/dsh-sandbox-escalation-fix#<new-commit-sha>
+```
+
+该命令会更新 Profile 依赖。仓库内已提交预构建的 `lib`，本包不再声明任何安装期构建脚本，pnpm 不会要求 `allowBuilds` 白名单。安装完成后检查 `--dump-config`，然后重新启动 DSH。
+
+#### 手动安装到 Web Profile 的用户
+
+准备包含新版 `lib` 的仓库或发布包，在插件目录中打开 Windows PowerShell，然后执行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\deploy-web-profile.ps1"
+```
+
+脚本优先使用 `DSH_HOME`；未设置时使用 `%USERPROFILE%\.dsh`。它只覆盖 8 个发布用 `lib` 文件并逐一比较 SHA-256；只有部署目录与新版构建完全一致时，最后一行才会显示：
+
+```text
+Deployment verified.
+```
+
+脚本不会修改 Profile Patch，也不会复制 `node_modules`。验证成功后重新启动 DSH。
+
+## 卸载
+
+使用 Release ZIP 时，Windows 可在解压目录执行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\uninstall-release.ps1"
+```
+
+其他 Profile 通过 `-Profile` 指定，例如：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\uninstall-release.ps1" -Profile headless
+```
+
+Linux/macOS 在解压目录执行（Profile 名作为第一个参数）：
+
+```sh
+sh ./uninstall-release.sh
+sh ./uninstall-release.sh headless
+```
+
+等效的 DSH CLI 命令为：
+
+```sh
+dsh plugin --profile <profile> remove dsh-sandbox-escalation-fix
+```
+
+卸载会移除插件创建的包装 Host、包装层和结果过滤器。完成后重启 DSH，并可通过 `dsh --profile <profile> --dump-config` 确认输出中不再出现插件层。
 
 ## 为什么选择它？
 
@@ -181,375 +568,6 @@ Session B = danger-full-access + never   → 看不到升级字段
 | 保留缺失或空白 `justification` 给 DSH 校验 | 支持 | 不保证 |
 | 清理描述与结果中的无效升级建议 | 覆盖 Shell、FS、PTC Mode、`job_output` | 不支持 |
 | 响应 Agent、Preset 和工具生命周期变化 | 支持 | 取决于实现 |
-
-## 安装与升级
-
-插件为零配置修复。推荐下载 Release ZIP，通过脚本安装到实际使用的 Profile；安装后按原方式启动 DSH：
-
-```sh
-dsh --profile <profile>
-```
-
-无需修改模型配置、Sandbox Mode、Approval Policy 或 Agent Preset。插件会按每个 Session 的当前权限状态动态决定模型可见参数。
-
-### Release ZIP 一键安装
-
-`0.1.3-alpha1-win-linux` Release 新增 DSH `0.1.3-alpha.1` 兼容，并正式支持 Linux：插件本体为纯 JavaScript、无平台限制；Release ZIP 在 Windows 脚本（`.ps1`）之外新增 POSIX 安装与卸载脚本（`.sh`）。完整流程已在 Ubuntu 24.04 实机验证（Landlock 后端）：测试套件 40/40 通过、`.sh` 脚本安装进 `web` Profile、Schema 投影生效、沙箱与审批行为和 Windows 一致。`.sh` 脚本预期同样适用于 macOS，但尚未在真实 Mac 上测试。本版同时保留 Desktop 2.0.3、PR #5 的软链接/外部插件目录解析增强、PR #8 的 Git 安装修复和 `0.1.2-alpha2.1` 的无 BOM 配置。部分更早版本在 Windows 编码工具重复写回 `cordis.patch.yml` 时可能出现多 BOM 污染，建议及时更换为本版本；旧 Release 仍会保留。新版 Release ZIP 解压后包含以下六个文件：
-
-```text
-dsh-sandbox-escalation-fix-0.1.3-alpha1-win-linux.tgz
-install-release.ps1
-uninstall-release.ps1
-install-release.sh
-uninstall-release.sh
-RELEASE-USAGE.zh.md
-```
-
-安装或升级前先完全关闭 DSH。执行脚本前，请确认系统已将 `dsh` 命令加入 PATH，且当前 DSH 使用的是 rc5、rc6、rc7、rc8、`0.1.1-rc.1`、`0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.2-alpha.2`、`0.1.2-alpha.3`、`0.1.2-alpha.4`、`0.1.2-alpha.5`、`0.1.2-rc.1` 或 `0.1.3-alpha.1`。建议先实际复现同类错误，再决定是否安装。
-
-#### 安装到默认 Web Profile
-
-Windows 在 Release 目录打开 PowerShell，执行：
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File ".\install-release.ps1"
-```
-
-Linux/macOS 在 Release 目录执行：
-
-```sh
-sh ./install-release.sh
-```
-
-（ZIP 解压不保留执行位，因此使用 `sh ./` 方式调用。）
-
-脚本会定位同目录中唯一的 `.tgz` 文件，然后执行：
-
-```powershell
-dsh plugin --profile web add <tgz-absolute-path>
-```
-
-DSH CLI 会将插件安装到 `web` Profile，并在 pnpm 成功后自动把插件的 `cordis.patch.yml` 加入 Profile Bundle 层。安装完成后重启 DSH。
-
-#### 安装到其他 Profile
-
-例如安装到 `headless`：
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File ".\install-release.ps1" -Profile headless
-```
-
-Linux/macOS 将 Profile 名作为第一个参数传入：
-
-```sh
-sh ./install-release.sh headless
-```
-
-#### 发布者构建 Release 目录
-
-在源码根目录执行：
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
-```
-
-该脚本会先构建 `lib`，再执行 `npm pack` 生成 `.tgz`，最后在 `release` 目录生成 `dsh-sandbox-escalation-fix-0.1.3-alpha1-win-linux-release.zip`。ZIP 内含 tarball、两个一键脚本和简明中文使用说明；上传 GitHub Release 时只需上传该 ZIP。
-
-### 升级已有安装
-
-升级前必须关闭 DSH。插件包名、Bundle ID 和 Profile Patch 配置行均未改变，已经安装旧版的用户不需要再次修改 `cordis.patch.yml`。
-
-#### 通过 GitHub Commit 安装的用户
-
-将原安装命令中的 Commit SHA 换成新的、已经审核过的 SHA，再执行同一条命令：
-
-```sh
-dsh plugin --profile <profile> add github:<owner>/dsh-sandbox-escalation-fix#<new-commit-sha>
-```
-
-该命令会更新 Profile 依赖。仓库内已提交预构建的 `lib`，本包不再声明任何安装期构建脚本，pnpm 不会要求 `allowBuilds` 白名单。安装完成后检查 `--dump-config`，然后重新启动 DSH。
-
-#### 手动安装到 Web Profile 的用户
-
-准备包含新版 `lib` 的仓库或发布包，在插件目录中打开 Windows PowerShell，然后执行：
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File ".\deploy-web-profile.ps1"
-```
-
-脚本优先使用 `DSH_HOME`；未设置时使用 `%USERPROFILE%\.dsh`。它只覆盖 8 个发布用 `lib` 文件并逐一比较 SHA-256；只有部署目录与新版构建完全一致时，最后一行才会显示：
-
-```text
-Deployment verified.
-```
-
-脚本不会修改 Profile Patch，也不会复制 `node_modules`。验证成功后重新启动 DSH。
-
-### 通过命令行安装
-
-建议从可信仓库锁定 Commit SHA 安装到指定 Profile：
-
-```sh
-dsh plugin --profile <profile> add github:<owner>/dsh-sandbox-escalation-fix#<commit-sha>
-```
-
-也可以从本地目录安装：
-
-```sh
-dsh plugin --profile <profile> add D:/deepseek-harness/plugins/dsh-sandbox-escalation-fix
-```
-
-本包已移除 `prepare` 等安装期构建脚本：Git 安装直接使用仓库内提交的预构建 `lib`，pnpm 不会要求 `allowBuilds` 白名单。旧版本安装时曾需要允许构建；如果 Profile 的 `pnpm-workspace.yaml` 里还残留 `dsh-sandbox-escalation-fix@https://codeload.github.com/...` 条目，升级到新版后可以删除。
-
-重新执行安装命令后检查最终组合：
-
-```sh
-dsh --profile <profile> --dump-config
-```
-
-输出中应包含 `dsh-sandbox-escalation-fix` 层和 `sandbox-escalation-fix` 行。
-
-## 卸载
-
-使用 Release ZIP 时，Windows 可在解压目录执行：
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File ".\uninstall-release.ps1"
-```
-
-其他 Profile 通过 `-Profile` 指定，例如：
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File ".\uninstall-release.ps1" -Profile headless
-```
-
-Linux/macOS 在解压目录执行（Profile 名作为第一个参数）：
-
-```sh
-sh ./uninstall-release.sh
-sh ./uninstall-release.sh headless
-```
-
-等效的 DSH CLI 命令为：
-
-```sh
-dsh plugin --profile <profile> remove dsh-sandbox-escalation-fix
-```
-
-卸载会移除插件创建的包装 Host、包装层和结果过滤器。完成后重启 DSH，并可通过 `dsh --profile <profile> --dump-config` 确认输出中不再出现插件层。
-
-## 手动覆盖安装（Windows）
-
-这是 Windows 下不使用插件安装命令的推荐方式。它只修改指定 Profile，不修改 DSH 安装目录或核心包。
-
-需要更短的逐文件教程时，可查看 [奶龙也能看懂的食用说明.txt](奶龙也能看懂的食用说明.txt)；其英文对应版为 [Tutorials that even Peppa Pig can understand](Tutorials%20that%20even%20Peppa%20Pig%20can%20understand)。
-
-### 开始前先确认
-
-- 本教程中的“Profile 根目录”不是 `.dsh`，而是当前实际启动的 Profile 目录。
-- 使用 Web Profile 时，Profile 根目录就是 `%USERPROFILE%\.dsh\profiles\web`。
-- 要修改的是 `profiles\web\cordis.patch.yml`；`.dsh` 根目录下没有该文件并不异常。
-- 可以直接复制整个 `dsh-sandbox-escalation-fix` 文件夹，但复制后必须删除插件目录内部的 `node_modules`。
-- Profile Patch 使用 YAML 块列表；不要给配置加引号，也不要自行添加 `[` 或 `]`。
-
-### 1. 关闭 DSH
-
-退出正在运行的 Web、桌面端或 Headless 进程，避免旧插件文件仍被 Node.js 占用。
-
-### 2. 打开 Profile 目录
-
-默认 Harness Home 是：
-
-```text
-C:\Users\<你的用户名>\.dsh
-```
-
-目标 Profile 目录是：
-
-```text
-C:\Users\<你的用户名>\.dsh\profiles\<profile>
-```
-
-例如 Web Profile 通常是：
-
-```text
-C:\Users\<你的用户名>\.dsh\profiles\web
-```
-
-可直接在 Windows 资源管理器地址栏输入：
-
-```text
-%USERPROFILE%\.dsh\profiles\web
-```
-
-如果配置过 `DSH_HOME`，请把上面的 `C:\Users\<你的用户名>\.dsh` 换成实际目录。若 `profiles\web` 尚不存在，先正常启动一次 DSH Web，让它初始化 Profile。
-
-注意：这里说的是 Profile 根目录 `%USERPROFILE%\.dsh\profiles\web`，**不是** `%USERPROFILE%\.dsh`。看到 `.dsh` 根目录没有 `cordis.patch.yml` 是正常的，不需要创建；继续进入 `profiles\web` 修改其中已有的文件即可。
-
-### 3. 覆盖插件目录
-
-在目标 Profile 中创建以下目录：
-
-```text
-<Profile目录>\node_modules\dsh-sandbox-escalation-fix
-```
-
-Web Profile 的默认目标目录是：
-
-```text
-%USERPROFILE%\.dsh\profiles\web\node_modules\dsh-sandbox-escalation-fix
-```
-
-如果该目录已经存在，先将整个目录改名为 `dsh-sandbox-escalation-fix.backup`。
-
-然后从本项目目录复制以下内容到新的 `dsh-sandbox-escalation-fix` 目录：
-
-```text
-package.json
-cordis.patch.yml
-README.md
-lib\
-```
-
-也可以直接把整个 `dsh-sandbox-escalation-fix` 文件夹复制到 Profile 的 `node_modules`，但复制完成后必须删除：
-
-```text
-<Profile目录>\node_modules\dsh-sandbox-escalation-fix\node_modules
-```
-
-嵌套的 `node_modules` 可能携带另一套 Cordis 和 DSH 包，导致 Scope、Service 或错误类型来自不同实例。`src`、`tests`、`package-lock.json` 和 TypeScript 配置留在目标目录通常不会影响运行，只是没有必要。
-
-复制完成后的结构应为：
-
-```text
-<Profile目录>\
-├── cordis.patch.yml
-├── package.json
-└── node_modules\
-    └── dsh-sandbox-escalation-fix\
-        ├── package.json
-        ├── cordis.patch.yml
-        ├── README.md
-        └── lib\
-            ├── index.mjs
-            ├── index.d.mts
-            ├── wrapper-protocol.mjs
-            └── wrapper-protocol.d.mts
-```
-
-注意：
-
-- 不要复制本项目的 `node_modules`。
-- 不需要复制 `src`、`tests`、`tsconfig.json` 或构建工具配置。
-- 手动安装包必须已经包含 `lib\index.mjs`；只有源码而没有 `lib` 的 ZIP 不能直接使用此方法。
-- 不要把插件自己的 `cordis.patch.yml` 直接覆盖到 Profile 根目录；Profile 根目录中的同名文件可能包含其他用户配置，必须按下一步手动合并。
-- 确认没有多套一层同名目录。
-
-正确入口是：
-
-```text
-<Profile目录>\node_modules\dsh-sandbox-escalation-fix\package.json
-<Profile目录>\node_modules\dsh-sandbox-escalation-fix\lib\index.mjs
-```
-
-以下结构是错误的：
-
-```text
-<Profile目录>\node_modules\dsh-sandbox-escalation-fix\dsh-sandbox-escalation-fix\package.json
-```
-
-更新已经安装的版本时，请直接按照[安装与升级](#安装与升级)操作，不要重复添加 Profile Patch。
-
-### 4. 修改 Profile Patch
-
-用记事本或其他纯文本编辑器打开：
-
-```text
-<Profile目录>\cordis.patch.yml
-```
-
-如果文件内容只有 `[]`，将其完整替换为：
-
-```yaml
-- insert:
-    - id: sandbox-escalation-fix
-      name: dsh-sandbox-escalation-fix
-```
-
-例如，初始文件为：
-
-```yaml
-# Your patch layer for this dsh profile, applied after every bundle layer:
-# a top-level YAML array of loader patch entries (id-targeted config
-# overrides, disables, and insert lists; `!!js` expressions allowed).
-[]
-```
-
-修改后的完整文件应为：
-
-```yaml
-# Your patch layer for this dsh profile, applied after every bundle layer:
-# a top-level YAML array of loader patch entries (id-targeted config
-# overrides, disables, and insert lists; `!!js` expressions allowed).
-- insert:
-    - id: sandbox-escalation-fix
-      name: dsh-sandbox-escalation-fix
-```
-
-顶部注释可以保留，只替换最后一行 `[]`。
-
-以下两种写法都**不要**使用：
-
-```yaml
-[- insert:
-    - id: sandbox-escalation-fix
-      name: dsh-sandbox-escalation-fix
-```
-
-```yaml
-- insert:
-    - id: sandbox-escalation-fix
-      name: dsh-sandbox-escalation-fix]
-```
-
-正确写法不带方括号、不带引号，且 `- insert:` 必须顶格。请使用空格缩进，不要使用 Tab。
-
-如果文件已有其他配置，不要覆盖原内容。在文件末尾追加同一个顶层 Patch：
-
-```yaml
-- insert:
-    - id: sandbox-escalation-fix
-      name: dsh-sandbox-escalation-fix
-```
-
-同一个文件中只能保留一个 `id: sandbox-escalation-fix`，不要重复追加。此手动方式不要求修改 Profile 的 `package.json`，因为插件由 Profile Patch 直接加载。
-
-### 5. 重启并验证
-
-按原来的方式启动该 Profile，新建 Session，然后在 All Access 下要求模型执行简单 Shell 命令或写入文件。
-
-修复生效时，OAI 系列模型不再因为重复发送 `danger-full-access` 升级参数而导致工具调用失败。若仍看到旧行为，请确认修改的是当前实际启动的 Profile，并彻底退出 DSH 后重新启动。
-
-### 安装后检查表
-
-- [ ] `profiles\web\cordis.patch.yml` 中只有一个 `id: sandbox-escalation-fix`。
-- [ ] Patch 中没有 `[`、`]` 或包住整段配置的引号。
-- [ ] 插件的 `package.json` 直接位于 `node_modules\dsh-sandbox-escalation-fix` 下。
-- [ ] 插件目录包含 `lib\index.mjs`。
-- [ ] 插件目录内部不存在第二个 `node_modules`。
-- [ ] DSH 已完全退出并重启。
-- [ ] 测试使用的是重启后新建的 Session。
-
-### 手动更新
-
-关闭 DSH，将新的 `package.json`、`cordis.patch.yml`、`README.md` 和整个 `lib` 目录覆盖到 Profile 的插件目录即可。Profile Patch 已存在时不需要再次修改。
-
-### 手动回退
-
-1. 关闭 DSH。
-2. 从 `<Profile目录>\cordis.patch.yml` 删除 `sandbox-escalation-fix` 的整个 `- insert:` 块。
-3. 删除 `<Profile目录>\node_modules\dsh-sandbox-escalation-fix`。
-4. 如果保留了 `.backup`，将其改回原名；否则直接重启 DSH。
 
 ## 验证、行为与插件协作
 

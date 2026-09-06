@@ -1,6 +1,10 @@
-# dsh-sandbox-escalation-fix (DSH 0.1.3-alpha.1 and Desktop 2.0.3 supported)
+# dsh-sandbox-escalation-fix (DSH 0.1.3-alpha.1 supported)
 
 English | [简体中文](README.zh.md)
+
+Latest supported DSH version: `0.1.3-alpha.1` (full list in [Compatibility](#compatibility))<br>
+Supported Desktop version: `2.0.3`<br>
+Supported systems: `Windows` & `Linux` (verified on real hardware) & `macOS` (theoretically supported, not yet tested)
 
 > [!IMPORTANT]
 > This is an independent community plugin. It is not published, maintained, or endorsed by DeepSeek, and it does not modify DeepSeek Harness core packages.
@@ -31,11 +35,20 @@ Error: sandbox escalation to "workspace-write" is not strictly wider than this c
 - [What It Does](#what-it-does)
 - [The Problem It Solves](#the-problem-it-solves)
 - [Before and After](#before-and-after)
-- [Why This Plugin](#why-this-plugin)
 - [Compatibility](#compatibility)
-- [Install and Upgrade](#install-and-upgrade)
+- Quick Start & Installation
+  - [Release ZIP installation](#release-zip-installation)
+    - [Install into the default Web Profile](#install-into-the-default-web-profile)
+    - [Install into another Profile](#install-into-another-profile)
+    - [Build the Release ZIP](#build-the-release-zip)
+  - [Command-line installation](#command-line-installation)
+  - [Manual Windows Installation](#manual-windows-installation)
+- Upgrade & Maintenance
+  - [Upgrade an existing installation](#upgrade-an-existing-installation)
+    - [GitHub commit installation](#github-commit-installation)
+    - [Manual Web Profile installation](#manual-web-profile-installation)
 - [Uninstall](#uninstall)
-- [Manual Windows Installation](#manual-windows-installation)
+- [Why This Plugin](#why-this-plugin)
 - [Verification, Behavior, and Plugin Cooperation](#verification-behavior-and-plugin-cooperation)
 - [Troubleshooting](#troubleshooting)
 - [Contributors](#contributors)
@@ -82,6 +95,175 @@ Without the plugin, affected All Access sessions can repeatedly fail before the 
 After installation, the same model can continue through Edit, Read, Pwsh, formatting, tests, lint, and type checking without entering the invalid escalation loop.
 
 ![After installation: Edit, Read, and Pwsh complete a multi-step development workflow](assets/after-successful-tools.png)
+
+## Compatibility
+
+- Node.js `^22.19.0` or `>=24.0.0`
+- `@deepseek-ai/dsh-*` `0.1.0-rc.5`, `0.1.0-rc.6`, `0.1.0-rc.7`, `0.1.0-rc.8`, `0.1.1-rc.1`, `0.1.1-rc.2`, `0.1.2-alpha.1`, `0.1.2-alpha.2`, `0.1.2-alpha.3`, `0.1.2-alpha.4`, `0.1.2-alpha.5`, `0.1.2-rc.1`, or `0.1.3-alpha.1`
+- `@deepseek-ai/cordis` `^4.0.1`
+- Operating systems: Windows (fully supported), Linux (verified on real Ubuntu 24.04), and macOS (expected compatible — the plugin is pure JavaScript and the `.sh` scripts are POSIX — but not yet tested on a real Mac). The plugin itself has no platform-specific code; actual sandbox enforcement on Linux/macOS depends on the sandbox backends available to the DSH host (Linux: `bwrap` or a Landlock-enforcing kernel 5.13+; macOS: Seatbelt), probed at runtime by DSH itself. When no backend is usable, DSH refuses to run the command rather than bypassing the sandbox. The plugin's permission projection and argument normalization do not depend on any particular backend.
+
+The plugin checks the installed DSH package versions at startup. Mixed rc.5/rc.6/rc.7/rc.8/0.1.1-rc.1/0.1.1-rc.2/0.1.2-alpha.1/0.1.2-alpha.2/0.1.2-alpha.3/0.1.2-alpha.4/0.1.2-alpha.5/0.1.2-rc.1/0.1.3-alpha.1 installations and unknown DSH versions fail explicitly. An initially visible target with partial escalation fields or an incompatible output definition rejects that Agent's registration; a target that omits both escalation fields is accepted as already safe. During runtime, a Preset restriction or stable provider removal makes the wrapper dormant, while an incompatible replacement is isolated to that Agent and target tool and reported without terminating the Host process. A later compatible definition is wrapped automatically.
+
+## Quick Start & Installation
+
+The plugin is a zero-configuration fix. The recommended path is to download the Release ZIP and install it into the Profile that runs the affected sessions. Start DSH normally after installation:
+
+```sh
+dsh --profile <profile>
+```
+
+You do not need to change the model configuration, Sandbox Mode, Approval Policy, or Agent Preset. The plugin projects the model-visible parameters from each Session's current permission state.
+
+### Release ZIP installation
+
+The `0.1.3-alpha1-win-linux` Release adds DSH `0.1.3-alpha.1` compatibility and Linux support: the plugin itself is pure JavaScript, Linux install and uninstall scripts (`.sh`) are now shipped beside the Windows (`.ps1`) ones, and the full flow was verified on real Ubuntu 24.04 (Landlock backend): test suite 40/40, `.sh` install into a `web` Profile, Schema projection confirmed, and sandbox/approval behavior identical to Windows. The POSIX `.sh` scripts are expected to work on macOS as well, but macOS has not been tested on a real Mac yet. This Release retains Desktop 2.0.3, linked/external plugin resolution, Git installation support, and the BOM-free `cordis.patch.yml` from `0.1.2-alpha2.1`. Earlier packages may be exposed to repeated-BOM contamination when that file is rewritten by some Windows encoding tools; users should replace them with this Release. Download and extract `dsh-sandbox-escalation-fix-0.1.3-alpha1-win-linux-release.zip`; it contains the tarball, one-click install and uninstall scripts for both Windows (`.ps1`) and POSIX shells (`.sh`), and a concise Chinese usage guide. Earlier Releases remain available.
+
+Close DSH before installing or upgrading the plugin. Ensure that `dsh` is available on PATH and that the running DSH version is rc5, rc6, rc7, rc8, `0.1.1-rc.1`, `0.1.1-rc.2`, `0.1.2-alpha.1`, `0.1.2-alpha.2`, `0.1.2-alpha.3`, `0.1.2-alpha.4`, `0.1.2-alpha.5`, `0.1.2-rc.1`, or `0.1.3-alpha.1`. Users should install only after reproducing the affected behavior.
+
+#### Install into the default Web Profile
+
+Windows:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\install-release.ps1"
+```
+
+Linux/macOS (ZIP extraction does not preserve the executable bit, so invoke through `sh`):
+
+```sh
+sh ./install-release.sh
+```
+
+The script runs `dsh plugin --profile web add <tgz-absolute-path>`.
+
+#### Install into another Profile
+
+For example, use `headless` instead of the default `web` Profile. Windows:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\install-release.ps1" -Profile headless
+```
+
+Linux/macOS passes the Profile name as the first argument:
+
+```sh
+sh ./install-release.sh headless
+```
+
+#### Build the Release ZIP
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
+```
+
+The script builds `lib`, packages the npm tarball, then creates `dsh-sandbox-escalation-fix-0.1.3-alpha1-win-linux-release.zip` in `release/`. The generated directory is ignored by Git; upload only this ZIP as the GitHub Release asset.
+
+### Command-line installation
+
+Install into the exact Profile that runs the affected sessions and pin a reviewed commit SHA:
+
+```sh
+dsh plugin --profile <profile> add github:<owner>/dsh-sandbox-escalation-fix#<commit-sha>
+```
+
+The package has no `prepare` or other install-time build script: pnpm installs the committed, prebuilt `lib` directly and no `allowBuilds` allowlist entry is needed. Versions before the `prepare` removal did run a build on install; if such an old version left a `dsh-sandbox-escalation-fix@https://codeload.github.com/...` entry under `allowBuilds` in `$DSH_HOME/profiles/<profile>/pnpm-workspace.yaml`, that stale entry can be removed after upgrading.
+
+Run the installation command again, then inspect the composed configuration:
+
+```sh
+dsh --profile <profile> --dump-config
+```
+
+The output should contain a `dsh-sandbox-escalation-fix` bundle layer and the `sandbox-escalation-fix` plugin row. Start DSH normally after verification:
+
+```sh
+dsh --profile <profile>
+```
+
+### Manual Windows Installation
+
+A detailed Windows walkthrough ? Profile paths, folder layout, nested `node_modules`, and the correct replacement for an empty `[]` patch ? is available in [README.zh.md](README.zh.md#??????).
+
+For a compact file-by-file walkthrough, see [Tutorials that even Peppa Pig can understand](Tutorials%20that%20even%20Peppa%20Pig%20can%20understand). The original Chinese layout is preserved in [???????????.txt](???????????.txt).
+
+The minimum manual layout is:
+
+```text
+<profile-directory>\
+??? cordis.patch.yml
+??? node_modules\
+    ??? dsh-sandbox-escalation-fix\
+        ??? package.json
+        ??? cordis.patch.yml
+        ??? README.md
+        ??? README.zh.md
+        ??? lib\
+            ??? index.mjs
+            ??? index.d.mts
+            ??? wrapper-protocol.mjs
+            ??? wrapper-protocol.d.mts
+```
+
+Merge this block into the Profile's `cordis.patch.yml`; do not overwrite unrelated Profile patches:
+
+```yaml
+- insert:
+    - id: sandbox-escalation-fix
+      name: dsh-sandbox-escalation-fix
+```
+
+Do not copy this repository's `node_modules` into the Profile. Multiple Cordis or DSH module instances can break Scope and Service identity.
+
+To update an existing installation, follow [Upgrade & Maintenance](#upgrade--maintenance); do not repeat the Profile patch step.
+
+## Upgrade & Maintenance
+
+### Upgrade an existing installation
+
+Close DSH before upgrading. The plugin package name, Bundle ID, and Profile patch row are unchanged, so an existing installation does not need another `cordis.patch.yml` entry.
+
+#### GitHub commit installation
+
+Run the same installation command with the new reviewed commit SHA:
+
+```sh
+dsh plugin --profile <profile> add github:<owner>/dsh-sandbox-escalation-fix#<new-commit-sha>
+```
+
+This updates the Profile dependency. The repository ships prebuilt `lib` files and the package defines no install-time build scripts, so pnpm never asks for an `allowBuilds` entry. Inspect `--dump-config`, then restart DSH.
+
+#### Manual Web Profile installation
+
+Use the repository or packaged source that contains the new built `lib` directory. Open Windows PowerShell in that plugin directory and run:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\deploy-web-profile.ps1"
+```
+
+The script uses `$DSH_HOME` when set, otherwise `%USERPROFILE%\.dsh`. It replaces only the eight published `lib` artifacts, compares every SHA-256 hash, and prints `Deployment verified.` only when the installed Web Profile exactly matches the new build. It does not modify the Profile patch or copy `node_modules`. Restart DSH after verification.
+
+## Uninstall
+
+From an extracted Release ZIP, Windows:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\uninstall-release.ps1"
+```
+
+Linux/macOS (Profile name as the first argument when needed):
+
+```sh
+sh ./uninstall-release.sh
+```
+
+Use `-Profile headless` (Windows) or `headless` (Linux/macOS) for another Profile. The equivalent CLI command is:
+
+```sh
+dsh plugin --profile <profile> remove dsh-sandbox-escalation-fix
+```
+
+The plugin lifecycle removes its wrapper hosts, wrapper layers, and result filters. Restart DSH, then confirm that `--dump-config` no longer lists the bundle.
 
 ## Why This Plugin
 
@@ -180,173 +362,6 @@ Zero configuration. Install it into the Profile you actually use and start DSH a
 | Preserve missing or blank `justification` for DSH validation | yes | not guaranteed |
 | Remove impossible advice from descriptions and results | Shell, FS, PTC Mode, and `job_output` | no |
 | React to Agent, Preset, and tool lifecycle changes | yes | implementation-dependent |
-
-## Compatibility
-
-- Node.js `^22.19.0` or `>=24.0.0`
-- `@deepseek-ai/dsh-*` `0.1.0-rc.5`, `0.1.0-rc.6`, `0.1.0-rc.7`, `0.1.0-rc.8`, `0.1.1-rc.1`, `0.1.1-rc.2`, `0.1.2-alpha.1`, `0.1.2-alpha.2`, `0.1.2-alpha.3`, `0.1.2-alpha.4`, `0.1.2-alpha.5`, `0.1.2-rc.1`, or `0.1.3-alpha.1`
-- `@deepseek-ai/cordis` `^4.0.1`
-- Operating systems: Windows (fully supported), Linux (verified on real Ubuntu 24.04), and macOS (expected compatible — the plugin is pure JavaScript and the `.sh` scripts are POSIX — but not yet tested on a real Mac). The plugin itself has no platform-specific code; actual sandbox enforcement on Linux/macOS depends on the sandbox backends available to the DSH host (Linux: `bwrap` or a Landlock-enforcing kernel 5.13+; macOS: Seatbelt), probed at runtime by DSH itself. When no backend is usable, DSH refuses to run the command rather than bypassing the sandbox. The plugin's permission projection and argument normalization do not depend on any particular backend.
-
-The plugin checks the installed DSH package versions at startup. Mixed rc.5/rc.6/rc.7/rc.8/0.1.1-rc.1/0.1.1-rc.2/0.1.2-alpha.1/0.1.2-alpha.2/0.1.2-alpha.3/0.1.2-alpha.4/0.1.2-alpha.5/0.1.2-rc.1/0.1.3-alpha.1 installations and unknown DSH versions fail explicitly. An initially visible target with partial escalation fields or an incompatible output definition rejects that Agent's registration; a target that omits both escalation fields is accepted as already safe. During runtime, a Preset restriction or stable provider removal makes the wrapper dormant, while an incompatible replacement is isolated to that Agent and target tool and reported without terminating the Host process. A later compatible definition is wrapped automatically.
-
-## Install and Upgrade
-
-The plugin is a zero-configuration fix. The recommended path is to download the Release ZIP and install it into the Profile that runs the affected sessions. Start DSH normally after installation:
-
-```sh
-dsh --profile <profile>
-```
-
-You do not need to change the model configuration, Sandbox Mode, Approval Policy, or Agent Preset. The plugin projects the model-visible parameters from each Session's current permission state.
-
-### Release ZIP installation
-
-The `0.1.3-alpha1-win-linux` Release adds DSH `0.1.3-alpha.1` compatibility and Linux support: the plugin itself is pure JavaScript, Linux install and uninstall scripts (`.sh`) are now shipped beside the Windows (`.ps1`) ones, and the full flow was verified on real Ubuntu 24.04 (Landlock backend): test suite 40/40, `.sh` install into a `web` Profile, Schema projection confirmed, and sandbox/approval behavior identical to Windows. The POSIX `.sh` scripts are expected to work on macOS as well, but macOS has not been tested on a real Mac yet. This Release retains Desktop 2.0.3, linked/external plugin resolution, Git installation support, and the BOM-free `cordis.patch.yml` from `0.1.2-alpha2.1`. Earlier packages may be exposed to repeated-BOM contamination when that file is rewritten by some Windows encoding tools; users should replace them with this Release. Download and extract `dsh-sandbox-escalation-fix-0.1.3-alpha1-win-linux-release.zip`; it contains the tarball, one-click install and uninstall scripts for both Windows (`.ps1`) and POSIX shells (`.sh`), and a concise Chinese usage guide. Earlier Releases remain available.
-
-Close DSH before installing or upgrading the plugin. Ensure that `dsh` is available on PATH and that the running DSH version is rc5, rc6, rc7, rc8, `0.1.1-rc.1`, `0.1.1-rc.2`, `0.1.2-alpha.1`, `0.1.2-alpha.2`, `0.1.2-alpha.3`, `0.1.2-alpha.4`, `0.1.2-alpha.5`, `0.1.2-rc.1`, or `0.1.3-alpha.1`. Users should install only after reproducing the affected behavior.
-
-#### Install into the default Web Profile
-
-Windows:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File ".\install-release.ps1"
-```
-
-Linux/macOS (ZIP extraction does not preserve the executable bit, so invoke through `sh`):
-
-```sh
-sh ./install-release.sh
-```
-
-The script runs `dsh plugin --profile web add <tgz-absolute-path>`.
-
-#### Install into another Profile
-
-For example, use `headless` instead of the default `web` Profile. Windows:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File ".\install-release.ps1" -Profile headless
-```
-
-Linux/macOS passes the Profile name as the first argument:
-
-```sh
-sh ./install-release.sh headless
-```
-
-#### Build the Release ZIP
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
-```
-
-The script builds `lib`, packages the npm tarball, then creates `dsh-sandbox-escalation-fix-0.1.3-alpha1-win-linux-release.zip` in `release/`. The generated directory is ignored by Git; upload only this ZIP as the GitHub Release asset.
-
-### Upgrade an existing installation
-
-Close DSH before upgrading. The plugin package name, Bundle ID, and Profile patch row are unchanged, so an existing installation does not need another `cordis.patch.yml` entry.
-
-#### GitHub commit installation
-
-Run the same installation command with the new reviewed commit SHA:
-
-```sh
-dsh plugin --profile <profile> add github:<owner>/dsh-sandbox-escalation-fix#<new-commit-sha>
-```
-
-This updates the Profile dependency. The repository ships prebuilt `lib` files and the package defines no install-time build scripts, so pnpm never asks for an `allowBuilds` entry. Inspect `--dump-config`, then restart DSH.
-
-#### Manual Web Profile installation
-
-Use the repository or packaged source that contains the new built `lib` directory. Open Windows PowerShell in that plugin directory and run:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File ".\deploy-web-profile.ps1"
-```
-
-The script uses `$DSH_HOME` when set, otherwise `%USERPROFILE%\.dsh`. It replaces only the eight published `lib` artifacts, compares every SHA-256 hash, and prints `Deployment verified.` only when the installed Web Profile exactly matches the new build. It does not modify the Profile patch or copy `node_modules`. Restart DSH after verification.
-
-### Command-line installation
-
-Install into the exact Profile that runs the affected sessions and pin a reviewed commit SHA:
-
-```sh
-dsh plugin --profile <profile> add github:<owner>/dsh-sandbox-escalation-fix#<commit-sha>
-```
-
-The package has no `prepare` or other install-time build script: pnpm installs the committed, prebuilt `lib` directly and no `allowBuilds` allowlist entry is needed. Versions before the `prepare` removal did run a build on install; if such an old version left a `dsh-sandbox-escalation-fix@https://codeload.github.com/...` entry under `allowBuilds` in `$DSH_HOME/profiles/<profile>/pnpm-workspace.yaml`, that stale entry can be removed after upgrading.
-
-Run the installation command again, then inspect the composed configuration:
-
-```sh
-dsh --profile <profile> --dump-config
-```
-
-The output should contain a `dsh-sandbox-escalation-fix` bundle layer and the `sandbox-escalation-fix` plugin row. Start DSH normally after verification:
-
-```sh
-dsh --profile <profile>
-```
-
-## Uninstall
-
-From an extracted Release ZIP, Windows:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File ".\uninstall-release.ps1"
-```
-
-Linux/macOS (Profile name as the first argument when needed):
-
-```sh
-sh ./uninstall-release.sh
-```
-
-Use `-Profile headless` (Windows) or `headless` (Linux/macOS) for another Profile. The equivalent CLI command is:
-
-```sh
-dsh plugin --profile <profile> remove dsh-sandbox-escalation-fix
-```
-
-The plugin lifecycle removes its wrapper hosts, wrapper layers, and result filters. Restart DSH, then confirm that `--dump-config` no longer lists the bundle.
-
-## Manual Windows Installation
-
-A detailed Windows walkthrough ? Profile paths, folder layout, nested `node_modules`, and the correct replacement for an empty `[]` patch ? is available in [README.zh.md](README.zh.md#??????).
-
-For a compact file-by-file walkthrough, see [Tutorials that even Peppa Pig can understand](Tutorials%20that%20even%20Peppa%20Pig%20can%20understand). The original Chinese layout is preserved in [???????????.txt](???????????.txt).
-
-The minimum manual layout is:
-
-```text
-<profile-directory>\
-??? cordis.patch.yml
-??? node_modules\
-    ??? dsh-sandbox-escalation-fix\
-        ??? package.json
-        ??? cordis.patch.yml
-        ??? README.md
-        ??? README.zh.md
-        ??? lib\
-            ??? index.mjs
-            ??? index.d.mts
-            ??? wrapper-protocol.mjs
-            ??? wrapper-protocol.d.mts
-```
-
-Merge this block into the Profile's `cordis.patch.yml`; do not overwrite unrelated Profile patches:
-
-```yaml
-- insert:
-    - id: sandbox-escalation-fix
-      name: dsh-sandbox-escalation-fix
-```
-
-Do not copy this repository's `node_modules` into the Profile. Multiple Cordis or DSH module instances can break Scope and Service identity.
-
-To update an existing installation, follow [Install and Upgrade](#install-and-upgrade); do not repeat the Profile patch step.
 
 ## Verification, Behavior, and Plugin Cooperation
 
