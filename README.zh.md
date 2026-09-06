@@ -1,10 +1,6 @@
-# dsh-sandbox-escalation-fix（已支持 0.1.3-alpha.1）
+# dsh-sandbox-escalation-fix（已支持 0.1.3-alpha.1，适配 Win & Linux & macOS）
 
 [English](README.md) | 中文
-
-目前已支持的最新 DSH 版本：`0.1.3-alpha.1`（完整列表见[支持范围](#支持范围)）<br>
-目前已支持的 Desktop 版本：`2.0.3`<br>
-目前已支持的系统：`Windows` & `Linux`（实机验证）& `macOS`（理论支持，未实测）
 
 > [!IMPORTANT]
 > 这是独立开发的社区插件，不是 DeepSeek 官方发布、维护或背书的插件。它不会修改 DeepSeek Harness 的核心代码。
@@ -12,7 +8,14 @@
 > [!CAUTION]
 > 官方从DSH `0.1.0-rc8` 一直到 `0.1.3-alpha.1` 已做部分改善，但仍使用注册表全局升级 Schema 和执行期校验。**建议用户先观察原生行为，仅在实际遇到本文所列的同模式升级、空 justification 或反复重试问题后再安装本插件。**
 
+> 目前已支持的：<br>
+>> 最新 DSH 版本：`0.1.3-alpha.1`（完整列表见[支持范围](#支持范围)）<br>
+>> Desktop 版本：`2.0.3`<br>
+>> 操作系统：`Windows` & `Linux` & `macOS`（理论支持，未实测）
+>  
+>  若有尚未兼容的平台需要兼容适配，欢迎提交issue。<br>
 > *如果该插件帮上你的忙了，还请点颗星让更多人看见~非常感谢 Thanks♪(･ω･)ﾉ*
+
 
 **dsh-sandbox-escalation-fix** 是一个零配置兼容插件，直接解决 GPT 等第三方模型在 DSH All Access 下调用 `bash`、`pwsh`、`write`、`edit` 等工具时，因为错误的沙箱升级参数提示而调用失败、反复重试的问题。
 

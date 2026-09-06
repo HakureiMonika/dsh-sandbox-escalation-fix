@@ -1,10 +1,6 @@
-# dsh-sandbox-escalation-fix (DSH 0.1.3-alpha.1 supported)
+# dsh-sandbox-escalation-fix (DSH 0.1.3-alpha.1 supported,and Win & Linux & macOS)
 
 English | [简体中文](README.zh.md)
-
-Latest supported DSH version: `0.1.3-alpha.1` (full list in [Compatibility](#compatibility))<br>
-Supported Desktop version: `2.0.3`<br>
-Supported systems: `Windows` & `Linux` (verified on real hardware) & `macOS` (theoretically supported, not yet tested)
 
 > [!IMPORTANT]
 > This is an independent community plugin. It is not published, maintained, or endorsed by DeepSeek, and it does not modify DeepSeek Harness core packages.
@@ -12,6 +8,12 @@ Supported systems: `Windows` & `Linux` (verified on real hardware) & `macOS` (th
 > [!CAUTION]
 > The DSH official team has made some improvements spanning from version `DSH 0.1.0-rc8` through `0.1.3-alpha.1`, but still use registry-global escalation schemas and execution-time validation. **Users should first observe the built-in behavior and install this plugin only after reproducing the same-mode escalation, blank justification, or retry-loop failures described below.**
 
+> Latest supported:<br>
+>> DSH version: `0.1.3-alpha.1` (full list in [Compatibility](#compatibility))<br>
+>> Desktop version: `2.0.3`<br>
+>> OS: `Windows` & `Linux`  & `macOS` (theoretically supported, not yet tested)
+>  
+>  If there are platforms that are not yet compatible and require support, please feel free to submit an issue.<br>
 > *If it's useful, please stars let more people can see it~ Thanks♪(･ω･)ﾉ*
 
 **dsh-sandbox-escalation-fix** is a zero-configuration compatibility plugin that directly resolves the issue of third-party models like GPT failing to call tools such as `bash`, `pwsh`, `write`, and `edit` under DSH All Access, resulting in repeated retries due to incorrect sandbox escalation parameter prompts.
