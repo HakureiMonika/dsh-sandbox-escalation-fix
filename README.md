@@ -105,7 +105,7 @@ After installation, the same model can continue through Edit, Read, Pwsh, format
 - `@deepseek-ai/cordis` `^4.0.1`
 - Operating systems: Windows (fully supported), Linux (verified on real Ubuntu 24.04), and macOS (expected compatible — the plugin is pure JavaScript and the `.sh` scripts are POSIX — but not yet tested on a real Mac). The plugin itself has no platform-specific code; actual sandbox enforcement on Linux/macOS depends on the sandbox backends available to the DSH host (Linux: `bwrap` or a Landlock-enforcing kernel 5.13+; macOS: Seatbelt), probed at runtime by DSH itself. When no backend is usable, DSH refuses to run the command rather than bypassing the sandbox. The plugin's permission projection and argument normalization do not depend on any particular backend.
 
-The plugin checks the installed DSH package versions at startup. Mixed rc.5/rc.6/rc.7/rc.8/0.1.1-rc.1/0.1.1-rc.2/0.1.2-alpha.1/0.1.2-alpha.2/0.1.2-alpha.3/0.1.2-alpha.4/0.1.2-alpha.5/0.1.2-rc.1/0.1.3-alpha.1 installations and unknown DSH versions fail explicitly. An initially visible target with partial escalation fields or an incompatible output definition rejects that Agent's registration; a target that omits both escalation fields is accepted as already safe. During runtime, a Preset restriction or stable provider removal makes the wrapper dormant, while an incompatible replacement is isolated to that Agent and target tool and reported without terminating the Host process. A later compatible definition is wrapped automatically.
+The plugin checks the installed DSH package versions at startup. Mixed rc.5/rc.6/rc.7/rc.8/0.1.1-rc.1/0.1.1-rc.2/0.1.2-alpha.1/0.1.2-alpha.2/0.1.2-alpha.3/0.1.2-alpha.4/0.1.2-alpha.5/0.1.2-rc.1/0.1.3-alpha.1/0.1.3-alpha.2 installations and unknown DSH versions fail explicitly. An initially visible target with partial escalation fields or an incompatible output definition rejects that Agent's registration; a target that omits both escalation fields is accepted as already safe. During runtime, a Preset restriction or stable provider removal makes the wrapper dormant, while an incompatible replacement is isolated to that Agent and target tool and reported without terminating the Host process. A later compatible definition is wrapped automatically.
 
 ## Quick Start & Installation
 
@@ -119,9 +119,9 @@ You do not need to change the model configuration, Sandbox Mode, Approval Policy
 
 ### Release ZIP installation
 
-The `0.1.3-alpha1-win-linux` Release adds DSH `0.1.3-alpha.1` compatibility and Linux support: the plugin itself is pure JavaScript, Linux install and uninstall scripts (`.sh`) are now shipped beside the Windows (`.ps1`) ones, and the full flow was verified on real Ubuntu 24.04 (Landlock backend): test suite 40/40, `.sh` install into a `web` Profile, Schema projection confirmed, and sandbox/approval behavior identical to Windows. The POSIX `.sh` scripts are expected to work on macOS as well, but macOS has not been tested on a real Mac yet. This Release retains Desktop 2.0.3, linked/external plugin resolution, Git installation support, and the BOM-free `cordis.patch.yml` from `0.1.2-alpha2.1`. Earlier packages may be exposed to repeated-BOM contamination when that file is rewritten by some Windows encoding tools; users should replace them with this Release. Download and extract `dsh-sandbox-escalation-fix-0.1.3-alpha1-win-linux-release.zip`; it contains the tarball, one-click install and uninstall scripts for both Windows (`.ps1`) and POSIX shells (`.sh`), and a concise Chinese usage guide. Earlier Releases remain available.
+The `0.1.3-alpha2-win-linux` Release adds DSH `0.1.3-alpha.2` compatibility (the `0.1.3-alpha.1` gate remains admitted) and Linux support: the plugin itself is pure JavaScript, Linux install and uninstall scripts (`.sh`) are now shipped beside the Windows (`.ps1`) ones, and the full flow was verified on real Ubuntu 24.04 (Landlock backend): test suite 40/40, `.sh` install into a `web` Profile, Schema projection confirmed, and sandbox/approval behavior identical to Windows. The POSIX `.sh` scripts are expected to work on macOS as well, but macOS has not been tested on a real Mac yet. This Release retains Desktop 2.0.3, linked/external plugin resolution, Git installation support, and the BOM-free `cordis.patch.yml` from `0.1.2-alpha2.1`. Earlier packages may be exposed to repeated-BOM contamination when that file is rewritten by some Windows encoding tools; users should replace them with this Release. Download and extract `dsh-sandbox-escalation-fix-0.1.3-alpha2-win-linux-release.zip`; it contains the tarball, one-click install and uninstall scripts for both Windows (`.ps1`) and POSIX shells (`.sh`), and a concise Chinese usage guide. Earlier Releases remain available.
 
-Close DSH before installing or upgrading the plugin. Ensure that `dsh` is available on PATH and that the running DSH version is rc5, rc6, rc7, rc8, `0.1.1-rc.1`, `0.1.1-rc.2`, `0.1.2-alpha.1`, `0.1.2-alpha.2`, `0.1.2-alpha.3`, `0.1.2-alpha.4`, `0.1.2-alpha.5`, `0.1.2-rc.1`, or `0.1.3-alpha.1`. Users should install only after reproducing the affected behavior.
+Close DSH before installing or upgrading the plugin. Ensure that `dsh` is available on PATH and that the running DSH version is rc5, rc6, rc7, rc8, `0.1.1-rc.1`, `0.1.1-rc.2`, `0.1.2-alpha.1`, `0.1.2-alpha.2`, `0.1.2-alpha.3`, `0.1.2-alpha.4`, `0.1.2-alpha.5`, `0.1.2-rc.1`, `0.1.3-alpha.1`, or `0.1.3-alpha.2`. Users should install only after reproducing the affected behavior.
 
 #### Install into the default Web Profile
 
@@ -159,7 +159,7 @@ sh ./install-release.sh headless
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
 ```
 
-The script builds `lib`, packages the npm tarball, then creates `dsh-sandbox-escalation-fix-0.1.3-alpha1-win-linux-release.zip` in `release/`. The generated directory is ignored by Git; upload only this ZIP as the GitHub Release asset.
+The script builds `lib`, packages the npm tarball, then creates `dsh-sandbox-escalation-fix-0.1.3-alpha2-win-linux-release.zip` in `release/`. The generated directory is ignored by Git; upload only this ZIP as the GitHub Release asset.
 
 ### Command-line installation
 
@@ -347,11 +347,11 @@ The plugin listens to Agent creation, disposal, Preset changes, restrictions, an
 
 ### It won't lock you to a single DSH release
 
-The plugin supports DSH `0.1.0-rc.5`, `0.1.0-rc.6`, `0.1.0-rc.7`, `0.1.0-rc.8`, `0.1.1-rc.1`, `0.1.1-rc.2`, `0.1.2-alpha.1`, `0.1.2-alpha.2`, `0.1.2-alpha.3`, `0.1.2-alpha.4`, `0.1.2-alpha.5`, `0.1.2-rc.1`, and `0.1.3-alpha.1`. At startup it verifies that the installed `@deepseek-ai/dsh-*` packages are consistent and supported. Incompatible tool definitions fail explicitly instead of producing silent misbehavior.
+The plugin supports DSH `0.1.0-rc.5`, `0.1.0-rc.6`, `0.1.0-rc.7`, `0.1.0-rc.8`, `0.1.1-rc.1`, `0.1.1-rc.2`, `0.1.2-alpha.1`, `0.1.2-alpha.2`, `0.1.2-alpha.3`, `0.1.2-alpha.4`, `0.1.2-alpha.5`, `0.1.2-rc.1`, `0.1.3-alpha.1`, and `0.1.3-alpha.2`. At startup it verifies that the installed `@deepseek-ai/dsh-*` packages are consistent and supported. Incompatible tool definitions fail explicitly instead of producing silent misbehavior.
 
 ### It won't add configuration burden
 
-Zero configuration. Install it into the Profile you actually use and start DSH as before. The test suite contains 40 tests running against the latest complete public `0.1.2-rc.1` package set, with the `0.1.3-alpha.1` compatibility surface audited from its immutable official tag, covering schema projection, false workspace-file escalation normalization, out-of-workspace and unconfirmed-root preservation, PTC Mode metadata, dynamic restrictions, multi-Agent isolation, delegate and wrapper-protocol replacement, internal timeout-budget forwarding, failure-hint cleanup, and unload behavior.
+Zero configuration. Install it into the Profile you actually use and start DSH as before. The test suite contains 40 tests running against the latest complete public `0.1.2-rc.1` package set, with the `0.1.3-alpha.1` and `0.1.3-alpha.2` compatibility surfaces audited from their immutable official tags, covering schema projection, false workspace-file escalation normalization, out-of-workspace and unconfirmed-root preservation, PTC Mode metadata, dynamic restrictions, multi-Agent isolation, delegate and wrapper-protocol replacement, internal timeout-budget forwarding, failure-hint cleanup, and unload behavior.
 
 ### Compared with execution-only normalization
 
@@ -407,7 +407,7 @@ The calls should complete without `sandbox_permissions` argument errors or impos
 
 The 39-test suite uses real DSH `SessionStore`, `ToolRuntime`, `AgentRegistry`, `SandboxPolicyService`, `ApprovalService`, and `SystemPrompt` packages rather than only isolated mocks. It covers the permission matrix, schema projection, false workspace-file escalation normalization, parent-traversal and external-symlink preservation, PTC Mode SDK generation, dynamic restrictions, multi-Agent isolation, delegate replacement, cooperative wrappers, hint filtering, version checks, and unload behavior.
 
-The complete public `0.1.2-rc.1` package set remains the runtime integration baseline; `0.1.3-alpha.1` is covered by immutable-tag source-contract auditing because its public npm packages were not yet available, including Session Projection, Agent, ToolRuntime, Sandbox Policy, Approval, LLM, Scope, Session, and System Prompt packages. Automated tests do not completely replace E2E validation with a real model provider.
+The complete public `0.1.2-rc.1` package set remains the runtime integration baseline; `0.1.3-alpha.1` and `0.1.3-alpha.2` are covered by immutable-tag source-contract auditing because their public npm packages were not yet available, including Session Projection, Agent, ToolRuntime, Sandbox Policy, Approval, LLM, Scope, Session, and System Prompt packages. Automated tests do not completely replace E2E validation with a real model provider.
 
 ### Wrapper Conflicts
 

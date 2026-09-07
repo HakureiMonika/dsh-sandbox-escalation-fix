@@ -113,10 +113,10 @@ dsh --profile <profile>
 
 ### Release ZIP 一键安装
 
-`0.1.3-alpha1-win-linux` Release 新增 DSH `0.1.3-alpha.1` 兼容，并正式支持 Linux：插件本体为纯 JavaScript、无平台限制；Release ZIP 在 Windows 脚本（`.ps1`）之外新增 POSIX 安装与卸载脚本（`.sh`）。完整流程已在 Ubuntu 24.04 实机验证（Landlock 后端）：测试套件 40/40 通过、`.sh` 脚本安装进 `web` Profile、Schema 投影生效、沙箱与审批行为和 Windows 一致。`.sh` 脚本预期同样适用于 macOS，但尚未在真实 Mac 上测试。本版同时保留 Desktop 2.0.3、PR #5 的软链接/外部插件目录解析增强、PR #8 的 Git 安装修复和 `0.1.2-alpha2.1` 的无 BOM 配置。部分更早版本在 Windows 编码工具重复写回 `cordis.patch.yml` 时可能出现多 BOM 污染，建议及时更换为本版本；旧 Release 仍会保留。新版 Release ZIP 解压后包含以下六个文件：
+`0.1.3-alpha2-win-linux` Release 新增 DSH `0.1.3-alpha.2` 兼容（`0.1.3-alpha.1` 门禁同时放行），并正式支持 Linux：插件本体为纯 JavaScript、无平台限制；Release ZIP 在 Windows 脚本（`.ps1`）之外新增 POSIX 安装与卸载脚本（`.sh`）。完整流程已在 Ubuntu 24.04 实机验证（Landlock 后端）：测试套件 40/40 通过、`.sh` 脚本安装进 `web` Profile、Schema 投影生效、沙箱与审批行为和 Windows 一致。`.sh` 脚本预期同样适用于 macOS，但尚未在真实 Mac 上测试。本版同时保留 Desktop 2.0.3、PR #5 的软链接/外部插件目录解析增强、PR #8 的 Git 安装修复和 `0.1.2-alpha2.1` 的无 BOM 配置。部分更早版本在 Windows 编码工具重复写回 `cordis.patch.yml` 时可能出现多 BOM 污染，建议及时更换为本版本；旧 Release 仍会保留。新版 Release ZIP 解压后包含以下六个文件：
 
 ```text
-dsh-sandbox-escalation-fix-0.1.3-alpha1-win-linux.tgz
+dsh-sandbox-escalation-fix-0.1.3-alpha2-win-linux.tgz
 install-release.ps1
 uninstall-release.ps1
 install-release.sh
@@ -124,7 +124,7 @@ uninstall-release.sh
 RELEASE-USAGE.zh.md
 ```
 
-安装或升级前先完全关闭 DSH。执行脚本前，请确认系统已将 `dsh` 命令加入 PATH，且当前 DSH 使用的是 rc5、rc6、rc7、rc8、`0.1.1-rc.1`、`0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.2-alpha.2`、`0.1.2-alpha.3`、`0.1.2-alpha.4`、`0.1.2-alpha.5`、`0.1.2-rc.1` 或 `0.1.3-alpha.1`。建议先实际复现同类错误，再决定是否安装。
+安装或升级前先完全关闭 DSH。执行脚本前，请确认系统已将 `dsh` 命令加入 PATH，且当前 DSH 使用的是 rc5、rc6、rc7、rc8、`0.1.1-rc.1`、`0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.2-alpha.2`、`0.1.2-alpha.3`、`0.1.2-alpha.4`、`0.1.2-alpha.5`、`0.1.2-rc.1`、`0.1.3-alpha.1` 或 `0.1.3-alpha.2`。建议先实际复现同类错误，再决定是否安装。
 
 #### 安装到默认 Web Profile
 
@@ -172,7 +172,7 @@ sh ./install-release.sh headless
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
 ```
 
-该脚本会先构建 `lib`，再执行 `npm pack` 生成 `.tgz`，最后在 `release` 目录生成 `dsh-sandbox-escalation-fix-0.1.3-alpha1-win-linux-release.zip`。ZIP 内含 tarball、两个一键脚本和简明中文使用说明；上传 GitHub Release 时只需上传该 ZIP。
+该脚本会先构建 `lib`，再执行 `npm pack` 生成 `.tgz`，最后在 `release` 目录生成 `dsh-sandbox-escalation-fix-0.1.3-alpha2-win-linux-release.zip`。ZIP 内含 tarball、两个一键脚本和简明中文使用说明；上传 GitHub Release 时只需上传该 ZIP。
 
 ### 通过命令行安装
 
@@ -554,7 +554,7 @@ Session B = danger-full-access + never   → 看不到升级字段
 
 ### 它不会只支持单一 DSH 版本
 
-插件同时支持 DSH `0.1.0-rc.5`、`0.1.0-rc.6`、`0.1.0-rc.7`、`0.1.0-rc.8`、`0.1.1-rc.1`、`0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.2-alpha.2`、`0.1.2-alpha.3`、`0.1.2-alpha.4`、`0.1.2-alpha.5`、`0.1.2-rc.1` 和 `0.1.3-alpha.1`，并在加载时校验 DSH 各包版本是否一致且受支持。遇到不兼容的工具定义会主动拒绝安装，而不是在运行中产生难以排查的诡异行为。
+插件同时支持 DSH `0.1.0-rc.5`、`0.1.0-rc.6`、`0.1.0-rc.7`、`0.1.0-rc.8`、`0.1.1-rc.1`、`0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.2-alpha.2`、`0.1.2-alpha.3`、`0.1.2-alpha.4`、`0.1.2-alpha.5`、`0.1.2-rc.1`、`0.1.3-alpha.1` 和 `0.1.3-alpha.2`，并在加载时校验 DSH 各包版本是否一致且受支持。遇到不兼容的工具定义会主动拒绝安装，而不是在运行中产生难以排查的诡异行为。
 
 ### 它不会给你增加配置负担
 
@@ -607,7 +607,7 @@ dsh web: http://127.0.0.1:3080
 
 自动测试直接使用真实 DSH `SessionStore`、`ToolRuntime`、`AgentRegistry`、`SandboxPolicyService`、`ApprovalService` 和 `SystemPrompt` 包，而不是只测试隔离 Mock。40 项测试覆盖：
 
-当前运行时集成基线仍是公共 npm 已发布的完整 DSH `0.1.2-rc.1` 包集，并包含 `SessionProjectionService` 组合依赖；`0.1.3-alpha.1` 公共 npm 包在本次发布时尚未上线，因此该版本依据不可变官方标签进行源码契约审计。
+当前运行时集成基线仍是公共 npm 已发布的完整 DSH `0.1.2-rc.1` 包集，并包含 `SessionProjectionService` 组合依赖；`0.1.3-alpha.1` 与 `0.1.3-alpha.2` 公共 npm 包在本次发布时尚未上线，因此这两个版本依据不可变官方标签进行源码契约审计。
 
 - 权限矩阵；
 - 精确同模式正规化；
