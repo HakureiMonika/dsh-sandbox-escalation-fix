@@ -1,4 +1,4 @@
-# dsh-sandbox-escalation-fix (DSH 0.1.3-alpha.1 supported,and Win & Linux & macOS)
+# dsh-sandbox-escalation-fix (DSH 0.1.3-alpha.2 supported,and Win & Linux & macOS)
 
 English | [简体中文](README.zh.md)
 
@@ -6,14 +6,14 @@ English | [简体中文](README.zh.md)
 > This is an independent community plugin. It is not published, maintained, or endorsed by DeepSeek, and it does not modify DeepSeek Harness core packages.
 
 > [!CAUTION]
-> The DSH official team has made some improvements spanning from version `DSH 0.1.0-rc8` through `0.1.3-alpha.1`, but still use registry-global escalation schemas and execution-time validation. **Users should first observe the built-in behavior and install this plugin only after reproducing the same-mode escalation, blank justification, or retry-loop failures described below.**
-
-> Latest supported:<br>
->> DSH version: `0.1.3-alpha.1` (full list in [Compatibility](#compatibility))<br>
->> Desktop version: `2.0.3`<br>
->> OS: `Windows` & `Linux`  & `macOS` (theoretically supported, not yet tested)
+> The DSH official team has made some improvements spanning from version `DSH 0.1.0-rc8` through `0.1.3-alpha.2`, but still use registry-global escalation schemas and execution-time validation. **Users should first observe the built-in behavior and install this plugin only after reproducing the same-mode escalation, blank justification, or retry-loop failures described below.**
+> 
+> Currently supported:<br>
+> Latest supported DSH version: `0.1.3-alpha.2` (full list in [Compatibility](#compatibility))<br>
+> Desktop version: `2.0.3`<br>
+> OS: `Windows` & `Linux`  & `macOS` (theoretically supported, not yet tested)
 >  
->  If there are platforms that are not yet compatible and require support, please feel free to submit an issue.<br>
+>  If there is any platform that has not yet been adapted and needs compatibility, please submit an issue.<br>
 > *If it's useful, please stars let more people can see it~ Thanks♪(･ω･)ﾉ*
 
 **dsh-sandbox-escalation-fix** is a zero-configuration compatibility plugin that directly resolves the issue of third-party models like GPT failing to call tools such as `bash`, `pwsh`, `write`, and `edit` under DSH All Access, resulting in repeated retries due to incorrect sandbox escalation parameter prompts.
@@ -101,7 +101,7 @@ After installation, the same model can continue through Edit, Read, Pwsh, format
 ## Compatibility
 
 - Node.js `^22.19.0` or `>=24.0.0`
-- `@deepseek-ai/dsh-*` `0.1.0-rc.5`, `0.1.0-rc.6`, `0.1.0-rc.7`, `0.1.0-rc.8`, `0.1.1-rc.1`, `0.1.1-rc.2`, `0.1.2-alpha.1`, `0.1.2-alpha.2`, `0.1.2-alpha.3`, `0.1.2-alpha.4`, `0.1.2-alpha.5`, `0.1.2-rc.1`, or `0.1.3-alpha.1`
+- `@deepseek-ai/dsh-*` `0.1.0-rc.5`, `0.1.0-rc.6`, `0.1.0-rc.7`, `0.1.0-rc.8`, `0.1.1-rc.1`, `0.1.1-rc.2`, `0.1.2-alpha.1`, `0.1.2-alpha.2`, `0.1.2-alpha.3`, `0.1.2-alpha.4`, `0.1.2-alpha.5`, `0.1.2-rc.1`, `0.1.3-alpha.1`, or `0.1.3-alpha.2`
 - `@deepseek-ai/cordis` `^4.0.1`
 - Operating systems: Windows (fully supported), Linux (verified on real Ubuntu 24.04), and macOS (expected compatible — the plugin is pure JavaScript and the `.sh` scripts are POSIX — but not yet tested on a real Mac). The plugin itself has no platform-specific code; actual sandbox enforcement on Linux/macOS depends on the sandbox backends available to the DSH host (Linux: `bwrap` or a Landlock-enforcing kernel 5.13+; macOS: Seatbelt), probed at runtime by DSH itself. When no backend is usable, DSH refuses to run the command rather than bypassing the sandbox. The plugin's permission projection and argument normalization do not depend on any particular backend.
 

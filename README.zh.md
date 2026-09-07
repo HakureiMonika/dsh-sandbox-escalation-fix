@@ -677,13 +677,13 @@ import {
 ## 支持范围
 
 - Node.js `^22.19.0` 或 `>=24.0.0`
-- `@deepseek-ai/dsh-*` `0.1.0-rc.5`、`0.1.0-rc.6`、`0.1.0-rc.7`、`0.1.0-rc.8`、`0.1.1-rc.1`、`0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.2-alpha.2`、`0.1.2-alpha.3`、`0.1.2-alpha.4`、`0.1.2-alpha.5`、`0.1.2-rc.1`、`0.1.3-alpha.1`
+- `@deepseek-ai/dsh-*` `0.1.0-rc.5`、`0.1.0-rc.6`、`0.1.0-rc.7`、`0.1.0-rc.8`、`0.1.1-rc.1`、`0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.2-alpha.2`、`0.1.2-alpha.3`、`0.1.2-alpha.4`、`0.1.2-alpha.5`、`0.1.2-rc.1`、`0.1.3-alpha.1`、`0.1.3-alpha.2`
 - `@deepseek-ai/cordis` `^4.0.1`
 - 操作系统：Windows（完整支持）、Linux（已在 Ubuntu 24.04 实机验证）、macOS（预期兼容——插件为纯 JavaScript、`.sh` 脚本遵循 POSIX——但尚未在真实 Mac 上测试）。插件本体无平台相关代码；Linux/macOS 上沙箱的实际生效依赖 DSH 宿主可用的沙箱后端（Linux 为 `bwrap` 或启用了 Landlock 的内核 5.13+，macOS 为 Seatbelt），由 DSH 运行时自动探测；后端不可用时 DSH 会拒绝执行而不是绕过沙箱。插件的权限投影与参数正规化不依赖特定沙箱后端。
 
 插件针对这些版本的公开 Scope、ToolRuntime、Sandbox Policy 与 Approval Service 契约构建。Agent 初次创建时，已可见的目标工具定义或同 Scope 包装协议不兼容会严格拒绝该 Agent 注册。
 
-启动时会读取关键 `@deepseek-ai/dsh-*` 包的实际版本；rc.5/rc.6/rc.7/rc.8/0.1.1-rc.1/0.1.1-rc.2/0.1.2-alpha.1/0.1.2-alpha.2/0.1.2-alpha.3/0.1.2-alpha.4/0.1.3-alpha.1 混装或未知版本会拒绝启动。目标工具同时省略两个升级字段时视为已经安全。运行期的 Preset 限制或 Provider 稳定删除会让包装器进入休眠；运行期替换为字段残缺或输出定义不兼容的工具时，只隔离对应 Agent 的对应工具并记录警告，不会终止 Host 进程，后续兼容定义出现时自动恢复。
+启动时会读取关键 `@deepseek-ai/dsh-*` 包的实际版本；rc.5/rc.6/rc.7/rc.8/0.1.1-rc.1/0.1.1-rc.2/0.1.2-alpha.1/0.1.2-alpha.2/0.1.2-alpha.3/0.1.2-alpha.4/0.1.3-alpha.1/0.1.3-alpha.2 混装或未知版本会拒绝启动。目标工具同时省略两个升级字段时视为已经安全。运行期的 Preset 限制或 Provider 稳定删除会让包装器进入休眠；运行期替换为字段残缺或输出定义不兼容的工具时，只隔离对应 Agent 的对应工具并记录警告，不会终止 Host 进程，后续兼容定义出现时自动恢复。
 
 ## 贡献者
 

@@ -175,7 +175,7 @@ describe('execution compatibility', () => {
       .not.toThrow()
     expect(() => validateDshVersionSet({ tools: '0.1.2-rc.1', sandbox: '0.1.2-rc.1' }))
       .not.toThrow()
-    expect(() => validateDshVersionSet({ tools: '0.1.3-alpha.1', sandbox: '0.1.3-alpha.1' }))
+    expect(() => validateDshVersionSet({ tools: '0.1.3-alpha.2', sandbox: '0.1.3-alpha.2' }))
       .not.toThrow()
     expect(() => validateDshVersionSet({ tools: '0.1.0-rc.5', sandbox: '0.1.0-rc.6' }))
       .toThrow(/mixed DSH package versions/)
