@@ -1,4 +1,4 @@
-# dsh-sandbox-escalation-fix（已支持 0.1.3-alpha.1，适配 Win & Linux & macOS）
+# dsh-sandbox-escalation-fix（已支持 0.1.3-alpha.2，适配 Win & Linux & macOS）
 
 [English](README.md) | 中文
 
@@ -9,7 +9,7 @@
 > 官方从DSH `0.1.0-rc8` 一直到 `0.1.3-alpha.2` 已做部分改善，但仍使用注册表全局升级 Schema 和执行期校验。**建议用户先观察原生行为，仅在实际遇到本文所列的同模式升级、空 justification 或反复重试问题后再安装本插件。**
 
 > 目前已支持的：<br>
->> 最新 DSH 版本：`0.1.3-alpha.1`（完整列表见[支持范围](#支持范围)）<br>
+>> 最新 DSH 版本：`0.1.3-alpha.2`（完整列表见[支持范围](#支持范围)）<br>
 >> Desktop 版本：`2.0.3`<br>
 >> 操作系统：`Windows` & `Linux` & `macOS`（理论支持，未实测）
 >  
