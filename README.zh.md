@@ -39,6 +39,7 @@ Error: sandbox escalation to "workspace-write" is not strictly wider than this c
 - [它能解决什么问题？](#它能解决什么问题)
 - [安装前后对比](#安装前后对比)
 - 快速开始 & 如何安装
+  - [通过 npm Registry 安装（推荐）](#通过-npm-registry-安装推荐)
   - [Release ZIP 一键安装](#release-zip-一键安装)
     - [安装到默认 Web Profile](#安装到默认-web-profile)
     - [安装到其他 Profile](#安装到其他-profile)
@@ -50,6 +51,7 @@ Error: sandbox escalation to "workspace-write" is not strictly wider than this c
     - [手动回退](#手动回退)
 - 如何升级 / 维护
   - [升级已有安装](#升级已有安装)
+    - [通过 npm Registry 安装的用户](#通过-npm-registry-安装的用户)
     - [通过 GitHub Commit 安装的用户](#通过-github-commit-安装的用户)
     - [手动安装到 Web Profile 的用户](#手动安装到-web-profile-的用户)
 - [卸载](#卸载)
@@ -103,13 +105,35 @@ DSH 工具注册时会公开静态的升级字段，但真正可以请求的升�
 
 ## 快速开始 & 如何安装
 
-插件为零配置修复。推荐下载 Release ZIP，通过脚本安装到实际使用的 Profile；安装后按原方式启动 DSH：
+插件为零配置修复。最省事的方式是直接从公共 npm Registry 安装，也可以下载 Release ZIP 或从 Git 安装到实际使用的 Profile；安装后按原方式启动 DSH：
 
 ```sh
 dsh --profile <profile>
 ```
 
 无需修改模型配置、Sandbox Mode、Approval Policy 或 Agent Preset。插件会按每个 Session 的当前权限状态动态决定模型可见参数。
+
+### 通过 npm Registry 安装（推荐）
+
+插件已发布到公共 npm Registry，包名为 `dsh-sandbox-escalation-fix`。当前版本属于预发布版，发布在 `next` 标签下，因此安装时**必须显式带上 `@next`**；只写包名会去查 `latest` 标签，暂时还找不到可用版本。
+
+```sh
+dsh plugin --profile web add dsh-sandbox-escalation-fix@next
+```
+
+安装到其他 Profile 时替换 `web`：
+
+```sh
+dsh plugin --profile headless add dsh-sandbox-escalation-fix@next
+```
+
+如果希望锁定到当前具体版本，避免以后跟随标签更新：
+
+```sh
+dsh plugin --profile web add dsh-sandbox-escalation-fix@0.1.3-alpha2-win-linux.1
+```
+
+npm Registry 上的包与 GitHub Release ZIP 内的 `.tgz` 来自同一次构建，内容一致。安装完成后重启 DSH。
 
 ### Release ZIP 一键安装
 
@@ -172,7 +196,7 @@ sh ./install-release.sh headless
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
 ```
 
-该脚本会先构建 `lib`，再执行 `npm pack` 生成 `.tgz`，最后在 `release` 目录生成 `dsh-sandbox-escalation-fix-0.1.3-alpha2-win-linux-release.zip`。ZIP 内含 tarball、两个一键脚本和简明中文使用说明；上传 GitHub Release 时只需上传该 ZIP。
+该脚本会先构建 `lib`，再执行 `npm pack` 生成 `.tgz`，最后在 `release` 目录生成 `dsh-sandbox-escalation-fix-0.1.3-alpha2-win-linux.1-release.zip`。ZIP 内含 tarball、四个一键脚本和简明中文使用说明；上传 GitHub Release 时只需上传该 ZIP。
 
 ### 通过命令行安装
 
@@ -416,6 +440,16 @@ lib\
 ### 升级已有安装
 
 升级前必须关闭 DSH。插件包名、Bundle ID 和 Profile Patch 配置行均未改变，已经安装旧版的用户不需要再次修改 `cordis.patch.yml`。
+
+#### 通过 npm Registry 安装的用户
+
+重新执行带 `@next` 的安装命令即可获取最新的预发布版：
+
+```sh
+dsh plugin --profile <profile> add dsh-sandbox-escalation-fix@next
+```
+
+如果之前锁定过具体版本，把命令中的版本号替换为新版本即可。安装完成后检查 `--dump-config`，然后重新启动 DSH。
 
 #### 通过 GitHub Commit 安装的用户
 
@@ -679,11 +713,12 @@ import {
 - Node.js `^22.19.0` 或 `>=24.0.0`
 - `@deepseek-ai/dsh-*` `0.1.0-rc.5`、`0.1.0-rc.6`、`0.1.0-rc.7`、`0.1.0-rc.8`、`0.1.1-rc.1`、`0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.2-alpha.2`、`0.1.2-alpha.3`、`0.1.2-alpha.4`、`0.1.2-alpha.5`、`0.1.2-rc.1`、`0.1.3-alpha.1`、`0.1.3-alpha.2`
 - `@deepseek-ai/cordis` `^4.0.1`
+- 分发方式：公共 npm Registry（包名 `dsh-sandbox-escalation-fix`，预发布版位于 `next` 标签）、GitHub Release ZIP、本地 `.tgz`、本地目录或 Git Commit
 - 操作系统：Windows（完整支持）、Linux（已在 Ubuntu 24.04 实机验证）、macOS（预期兼容——插件为纯 JavaScript、`.sh` 脚本遵循 POSIX——但尚未在真实 Mac 上测试）。插件本体无平台相关代码；Linux/macOS 上沙箱的实际生效依赖 DSH 宿主可用的沙箱后端（Linux 为 `bwrap` 或启用了 Landlock 的内核 5.13+，macOS 为 Seatbelt），由 DSH 运行时自动探测；后端不可用时 DSH 会拒绝执行而不是绕过沙箱。插件的权限投影与参数正规化不依赖特定沙箱后端。
 
 插件针对这些版本的公开 Scope、ToolRuntime、Sandbox Policy 与 Approval Service 契约构建。Agent 初次创建时，已可见的目标工具定义或同 Scope 包装协议不兼容会严格拒绝该 Agent 注册。
 
-启动时会读取关键 `@deepseek-ai/dsh-*` 包的实际版本；rc.5/rc.6/rc.7/rc.8/0.1.1-rc.1/0.1.1-rc.2/0.1.2-alpha.1/0.1.2-alpha.2/0.1.2-alpha.3/0.1.2-alpha.4/0.1.3-alpha.1/0.1.3-alpha.2 混装或未知版本会拒绝启动。目标工具同时省略两个升级字段时视为已经安全。运行期的 Preset 限制或 Provider 稳定删除会让包装器进入休眠；运行期替换为字段残缺或输出定义不兼容的工具时，只隔离对应 Agent 的对应工具并记录警告，不会终止 Host 进程，后续兼容定义出现时自动恢复。
+启动时会读取关键 `@deepseek-ai/dsh-*` 包的实际版本；rc.5/rc.6/rc.7/rc.8/0.1.1-rc.1/0.1.1-rc.2/0.1.2-alpha.1/0.1.2-alpha.2/0.1.2-alpha.3/0.1.2-alpha.4/0.1.2-alpha.5/0.1.2-rc.1/0.1.3-alpha.1/0.1.3-alpha.2 混装或未知版本会拒绝启动。目标工具同时省略两个升级字段时视为已经安全。运行期的 Preset 限制或 Provider 稳定删除会让包装器进入休眠；运行期替换为字段残缺或输出定义不兼容的工具时，只隔离对应 Agent 的对应工具并记录警告，不会终止 Host 进程，后续兼容定义出现时自动恢复。
 
 ## 贡献者
 

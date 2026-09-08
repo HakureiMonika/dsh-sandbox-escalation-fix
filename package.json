@@ -1,6 +1,6 @@
 {
   "name": "dsh-sandbox-escalation-fix",
-  "version": "0.1.3-alpha2-win-linux",
+  "version": "0.1.3-alpha2-win-linux.1",
   "description": "Session-aware sandbox escalation compatibility plugin for DeepSeek Harness",
   "keywords": [
     "deepseek-harness",
@@ -9,13 +9,13 @@
     "sandbox",
     "plugin"
   ],
-  "homepage": "https://github.com/JUSTMONIKA2022/dsh-sandbox-escalation-fix#readme",
+  "homepage": "https://github.com/HakureiMonika/dsh-sandbox-escalation-fix#readme",
   "bugs": {
-    "url": "https://github.com/JUSTMONIKA2022/dsh-sandbox-escalation-fix/issues"
+    "url": "https://github.com/HakureiMonika/dsh-sandbox-escalation-fix/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/JUSTMONIKA2022/dsh-sandbox-escalation-fix.git"
+    "url": "git+https://github.com/HakureiMonika/dsh-sandbox-escalation-fix.git"
   },
   "type": "module",
   "main": "lib/index.mjs",
@@ -39,12 +39,18 @@
     "README.md",
     "README.zh.md",
     "Tutorials that even Peppa Pig can understand",
-    "???????????.txt",
+    "奶龙也能看懂的食用说明.txt",
     "LICENSE"
   ],
   "scripts": {
     "build": "node node_modules/typescript/bin/tsc --noEmit && node node_modules/tsdown/dist/run.mjs",
-    "test": "node node_modules/vitest/vitest.mjs run"
+    "test": "node node_modules/vitest/vitest.mjs run",
+    "prepublishOnly": "npm test && npm run build"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/",
+    "tag": "next"
   },
   "engines": {
     "node": "^22.19.0 || >=24.0.0"

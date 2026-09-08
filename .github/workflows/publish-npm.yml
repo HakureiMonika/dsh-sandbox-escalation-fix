@@ -1,0 +1,73 @@
+# 通过 npm Trusted Publishing（OIDC）发布到公共 npm Registry。
+#
+# 为什么这样写：
+# 1. 本工作流不使用任何长期 npm Token，而是依赖 GitHub Actions 的 OIDC 身份，
+#    由 npm 侧预先配置的 Trusted Publisher 校验仓库、工作流文件名和环境。
+# 2. 因此必须声明 id-token: write；否则 npm CLI 无法换取短期发布凭证，会报 ENEEDAUTH。
+# 3. 触发条件只允许推送 v* 标签或手动触发，避免每次 push 都发布。
+# 4. publishConfig 已在 package.json 中固定 registry 为 registry.npmjs.org、
+#    访问级别为 public、dist-tag 为 next，所以这里直接执行 npm publish 即可。
+#
+# 会影响的功能：
+# - 该文件一旦推送到默认分支，npmjs.com 上为该包配置 Trusted Publisher 时，
+#   "Workflow filename" 必须填写 publish-npm.yml，且大小写完全一致。
+# - 工作流内的 npm ci / npm test / npm run build 失败时不会发布，保证线上包可构建可测试。
+name: Publish to npm
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  # OIDC 换取 npm 短期凭证所必需，缺失会直接导致发布鉴权失败。
+  id-token: write
+  # 只读取仓库内容，不授予写权限，降低工作流被滥用的风险。
+  contents: read
+
+jobs:
+  publish:
+    # Trusted Publishing 目前只支持 GitHub 托管的 Runner，不支持自建 Runner。
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          # Node 24 满足 npm Trusted Publishing 要求（Node >= 22.14.0、npm CLI >= 11.5.1）。
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          # 发布构建严禁使用依赖缓存，避免缓存污染影响产物一致性。
+          package-manager-cache: false
+
+      - name: Install dependencies
+        # 使用 npm ci 严格按 package-lock.json 安装，保证发布产物可复现。
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Check whether this version is already published
+        # 首次建包必须由维护者人工完成（Trusted Publishing 要求包已存在），
+        # 因此推送首个标签时该版本可能已经在 Registry 上。
+        # 这里先查询当前版本，已存在则跳过发布，避免 CI 因重复版本而失败。
+        id: check
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          if npm view "dsh-sandbox-escalation-fix@$version" version >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish
+        # package.json 的 publishConfig 已指定 registry 与 next 标签；
+        # 使用 Trusted Publishing 时 npm 会自动生成 provenance，无需 --provenance。
+        if: steps.check.outputs.published == 'false'
+        run: npm publish

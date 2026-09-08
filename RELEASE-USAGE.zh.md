@@ -1,4 +1,4 @@
-# dsh-sandbox-escalation-fix 0.1.3-alpha1-win-linux 使用说明
+# dsh-sandbox-escalation-fix 0.1.3-alpha2-win-linux.1 使用说明
 
 ## 版本内容
 
@@ -17,10 +17,10 @@
 1. 完全退出正在运行的 DSH 或 DSH Desktop。
 2. 解压 Release ZIP，确认本说明、四个安装/卸载脚本（Windows 的 `.ps1` 与 Linux/macOS 的 `.sh`）和 `.tgz` 文件位于同一目录。
 3. 在 PowerShell（Windows）或终端（Linux/macOS）中执行 `dsh --version`，确认 `dsh` 命令可用。
-4. 当前支持的 DSH 版本为 `0.1.0-rc.5`、`0.1.0-rc.6`、`0.1.0-rc.7`、`0.1.0-rc.8`、`0.1.1-rc.1`、`0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.2-alpha.2`、`0.1.2-alpha.3`、`0.1.2-alpha.4`、`0.1.2-alpha.5`、`0.1.2-rc.1` 和 `0.1.3-alpha.1`。
+4. 当前支持的 DSH 版本为 `0.1.0-rc.5`、`0.1.0-rc.6`、`0.1.0-rc.7`、`0.1.0-rc.8`、`0.1.1-rc.1`、`0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.2-alpha.2`、`0.1.2-alpha.3`、`0.1.2-alpha.4`、`0.1.2-alpha.5`、`0.1.2-rc.1`、`0.1.3-alpha.1` 和 `0.1.3-alpha.2`。
 5. 插件本体为纯 JavaScript，无平台限制；Linux/macOS 上沙箱实际生效依赖 DSH 宿主可用的沙箱后端（Linux 为 `bwrap` 或启用了 Landlock 的内核 5.13+），由 DSH 运行时自动探测。
 
-> DSH `0.1.3-alpha.1` 仍使用注册表全局静态 Schema；Session 当前模式和严格变宽仍在执行期处理，`approval=never` 仍主要依靠提示词。官方标签源码确认关键升级契约未改变；因 `0.1.3-alpha.1` 公共 npm 包尚未上线，本次以标签源码审计和最新完整 `0.1.2-rc.1` 包集测试作为验证依据，建议只在实际遇到同模式升级、空 justification 或重复重试问题后安装。
+> DSH `0.1.3-alpha.1` 与 `0.1.3-alpha.2` 仍使用注册表全局静态 Schema；Session 当前模式和严格变宽仍在执行期处理，`approval=never` 仍主要依靠提示词。官方标签源码确认关键升级契约未改变；因这两个版本的公共 npm 包尚未上线，本次以标签源码审计、最新完整 `0.1.2-rc.1` 包集测试及 Ubuntu 24.04 实机验证作为依据，建议只在实际遇到同模式升级、空 justification 或重复重试问题后安装。
 
 ## 安装到默认 Web Profile
 
@@ -97,5 +97,6 @@ sh ./uninstall-release.sh headless
 ## 注意事项
 
 - Release 目录只能保留一个 `dsh-sandbox-escalation-fix-*.tgz`，否则安装脚本会拒绝运行，避免安装错误版本。
+- 通过 npm Registry 安装时，预发布版必须带 `@next`；只写包名会尝试从 `latest` 标签安装，当前可能找不到版本。
 - 不需要手动编辑插件包内的 `cordis.patch.yml`；DSH CLI 会管理 Profile 依赖和 Bundle 层。
 - 安装、升级或卸载后都应完全重启 DSH，并在对应 Profile 中新建 Session 验证。

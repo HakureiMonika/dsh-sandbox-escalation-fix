@@ -103,6 +103,7 @@ After installation, the same model can continue through Edit, Read, Pwsh, format
 - Node.js `^22.19.0` or `>=24.0.0`
 - `@deepseek-ai/dsh-*` `0.1.0-rc.5`, `0.1.0-rc.6`, `0.1.0-rc.7`, `0.1.0-rc.8`, `0.1.1-rc.1`, `0.1.1-rc.2`, `0.1.2-alpha.1`, `0.1.2-alpha.2`, `0.1.2-alpha.3`, `0.1.2-alpha.4`, `0.1.2-alpha.5`, `0.1.2-rc.1`, `0.1.3-alpha.1`, or `0.1.3-alpha.2`
 - `@deepseek-ai/cordis` `^4.0.1`
+- Distribution: public npm Registry (package `dsh-sandbox-escalation-fix`, prereleases under the `next` dist-tag), GitHub Release ZIP, local `.tgz`, local directory, or a Git commit
 - Operating systems: Windows (fully supported), Linux (verified on real Ubuntu 24.04), and macOS (expected compatible — the plugin is pure JavaScript and the `.sh` scripts are POSIX — but not yet tested on a real Mac). The plugin itself has no platform-specific code; actual sandbox enforcement on Linux/macOS depends on the sandbox backends available to the DSH host (Linux: `bwrap` or a Landlock-enforcing kernel 5.13+; macOS: Seatbelt), probed at runtime by DSH itself. When no backend is usable, DSH refuses to run the command rather than bypassing the sandbox. The plugin's permission projection and argument normalization do not depend on any particular backend.
 
 The plugin checks the installed DSH package versions at startup. Mixed rc.5/rc.6/rc.7/rc.8/0.1.1-rc.1/0.1.1-rc.2/0.1.2-alpha.1/0.1.2-alpha.2/0.1.2-alpha.3/0.1.2-alpha.4/0.1.2-alpha.5/0.1.2-rc.1/0.1.3-alpha.1/0.1.3-alpha.2 installations and unknown DSH versions fail explicitly. An initially visible target with partial escalation fields or an incompatible output definition rejects that Agent's registration; a target that omits both escalation fields is accepted as already safe. During runtime, a Preset restriction or stable provider removal makes the wrapper dormant, while an incompatible replacement is isolated to that Agent and target tool and reported without terminating the Host process. A later compatible definition is wrapped automatically.
@@ -117,9 +118,31 @@ dsh --profile <profile>
 
 You do not need to change the model configuration, Sandbox Mode, Approval Policy, or Agent Preset. The plugin projects the model-visible parameters from each Session's current permission state.
 
+### Install from the npm Registry (recommended)
+
+The plugin is published to the public npm Registry as `dsh-sandbox-escalation-fix`. The current version is a prerelease, so it is published under the `next` dist-tag. You **must include `@next`**; using the bare package name resolves the `latest` tag, which does not point at a usable version yet.
+
+```sh
+dsh plugin --profile web add dsh-sandbox-escalation-fix@next
+```
+
+For another Profile, replace `web`:
+
+```sh
+dsh plugin --profile headless add dsh-sandbox-escalation-fix@next
+```
+
+To pin the exact version instead of following the tag:
+
+```sh
+dsh plugin --profile web add dsh-sandbox-escalation-fix@0.1.3-alpha2-win-linux.1
+```
+
+The npm package and the `.tgz` inside the GitHub Release ZIP come from the same build, so they behave identically. Restart DSH after installation.
+
 ### Release ZIP installation
 
-The `0.1.3-alpha2-win-linux` Release adds DSH `0.1.3-alpha.2` compatibility (the `0.1.3-alpha.1` gate remains admitted) and Linux support: the plugin itself is pure JavaScript, Linux install and uninstall scripts (`.sh`) are now shipped beside the Windows (`.ps1`) ones, and the full flow was verified on real Ubuntu 24.04 (Landlock backend): test suite 40/40, `.sh` install into a `web` Profile, Schema projection confirmed, and sandbox/approval behavior identical to Windows. The POSIX `.sh` scripts are expected to work on macOS as well, but macOS has not been tested on a real Mac yet. This Release retains Desktop 2.0.3, linked/external plugin resolution, Git installation support, and the BOM-free `cordis.patch.yml` from `0.1.2-alpha2.1`. Earlier packages may be exposed to repeated-BOM contamination when that file is rewritten by some Windows encoding tools; users should replace them with this Release. Download and extract `dsh-sandbox-escalation-fix-0.1.3-alpha2-win-linux-release.zip`; it contains the tarball, one-click install and uninstall scripts for both Windows (`.ps1`) and POSIX shells (`.sh`), and a concise Chinese usage guide. Earlier Releases remain available.
+The `0.1.3-alpha2-win-linux.1` Release adds public npm Registry distribution (published under the `next` dist-tag) on top of `0.1.3-alpha2-win-linux`, and fixes stale version references in the npm metadata, lockfile, and Release usage guide. Plugin behavior, DSH `0.1.3-alpha.2` compatibility (the `0.1.3-alpha.1` gate remains admitted), and Linux support are unchanged from the previous build: the plugin itself is pure JavaScript, Linux install and uninstall scripts (`.sh`) ship beside the Windows (`.ps1`) ones, and the full flow was verified on real Ubuntu 24.04 (Landlock backend): test suite 40/40, `.sh` install into a `web` Profile, Schema projection confirmed, and sandbox/approval behavior identical to Windows. The POSIX `.sh` scripts are expected to work on macOS as well, but macOS has not been tested on a real Mac yet. This Release retains Desktop 2.0.3, linked/external plugin resolution, Git installation support, and the BOM-free `cordis.patch.yml` from `0.1.2-alpha2.1`. Earlier packages may be exposed to repeated-BOM contamination when that file is rewritten by some Windows encoding tools; users should replace them with this Release. Download and extract `dsh-sandbox-escalation-fix-0.1.3-alpha2-win-linux.1-release.zip`; it contains the tarball, one-click install and uninstall scripts for both Windows (`.ps1`) and POSIX shells (`.sh`), and a concise Chinese usage guide. Earlier Releases remain available.
 
 Close DSH before installing or upgrading the plugin. Ensure that `dsh` is available on PATH and that the running DSH version is rc5, rc6, rc7, rc8, `0.1.1-rc.1`, `0.1.1-rc.2`, `0.1.2-alpha.1`, `0.1.2-alpha.2`, `0.1.2-alpha.3`, `0.1.2-alpha.4`, `0.1.2-alpha.5`, `0.1.2-rc.1`, `0.1.3-alpha.1`, or `0.1.3-alpha.2`. Users should install only after reproducing the affected behavior.
 
@@ -159,7 +182,7 @@ sh ./install-release.sh headless
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
 ```
 
-The script builds `lib`, packages the npm tarball, then creates `dsh-sandbox-escalation-fix-0.1.3-alpha2-win-linux-release.zip` in `release/`. The generated directory is ignored by Git; upload only this ZIP as the GitHub Release asset.
+The script builds `lib`, packages the npm tarball, then creates `dsh-sandbox-escalation-fix-0.1.3-alpha2-win-linux.1-release.zip` in `release/`. The generated directory is ignored by Git; upload only this ZIP as the GitHub Release asset.
 
 ### Command-line installation
 
@@ -224,6 +247,16 @@ To update an existing installation, follow [Upgrade & Maintenance](#upgrade--mai
 ### Upgrade an existing installation
 
 Close DSH before upgrading. The plugin package name, Bundle ID, and Profile patch row are unchanged, so an existing installation does not need another `cordis.patch.yml` entry.
+
+#### npm Registry installation
+
+Re-run the `@next` install command to pick up the latest prerelease:
+
+```sh
+dsh plugin --profile <profile> add dsh-sandbox-escalation-fix@next
+```
+
+If you previously pinned an exact version, replace the version in that command with the new one. Inspect `--dump-config`, then restart DSH.
 
 #### GitHub commit installation
 
