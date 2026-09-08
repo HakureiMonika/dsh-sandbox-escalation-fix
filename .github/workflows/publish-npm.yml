@@ -67,7 +67,9 @@ jobs:
           fi
 
       - name: Publish
-        # package.json 的 publishConfig 已指定 registry 与 next 标签；
+        # 显式指定 --tag next：预发布版不应占用 latest，普通安装才会默认拿到稳定版。
+        # 虽然 package.json 的 publishConfig 也声明了 tag，但不同 npm 版本对它的支持不完全一致，
+        # 命令行参数优先级最高，因此这里再显式写一次，保证发布标签确定。
         # 使用 Trusted Publishing 时 npm 会自动生成 provenance，无需 --provenance。
         if: steps.check.outputs.published == 'false'
-        run: npm publish
+        run: npm publish --tag next
