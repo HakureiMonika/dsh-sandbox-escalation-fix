@@ -120,7 +120,7 @@ You do not need to change the model configuration, Sandbox Mode, Approval Policy
 
 ### Install from the npm Registry (recommended)
 
-The plugin is published to the public npm Registry as `dsh-sandbox-escalation-fix`. The current version is a prerelease, so it is published under the `next` dist-tag. You **must include `@next`**; using the bare package name resolves the `latest` tag, which does not point at a usable version yet.
+The plugin is published to the public npm Registry as `dsh-sandbox-escalation-fix`. The current version is a prerelease, and both `next` and `latest` point at it for now (npm always creates `latest` on the first publish). Install with an explicit `@next` or a pinned version so behavior stays predictable once a stable release moves the `latest` tag.
 
 ```sh
 dsh plugin --profile web add dsh-sandbox-escalation-fix@next

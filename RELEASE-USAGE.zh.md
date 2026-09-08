@@ -5,7 +5,8 @@
 - 正式支持 Linux：Release ZIP 新增 POSIX 安装与卸载脚本（`.sh`），插件本体为纯 JavaScript、无平台限制；已在 Ubuntu 24.04 实机（Landlock 沙箱后端）完成安装、Schema 投影与沙箱/审批行为验证。`.sh` 脚本预期同样适用于 macOS，但尚未在真实 Mac 上测试。
 - 支持 DSH Desktop `2.0.3` 隐藏宿主包清单时的严格结构校验回退。
 - 支持通过 `link:`、工作区软链接或外部插件目录加载插件。
-- 支持 DSH `0.1.3-alpha.1`，本插件会按每个 Session 的实际 Sandbox Mode 与 Approval Policy 投影升级字段。
+- 支持 DSH `0.1.3-alpha.2`（同时保留 `0.1.3-alpha.1` 门禁），本插件会按每个 Session 的实际 Sandbox Mode 与 Approval Policy 投影升级字段。
+- 新增公共 npm Registry 分发；预发布版发布在 `next` 标签下，包名安装与 GitHub Release `.tgz` 使用同一份构建产物。
 - 在 `workspace-write` 下，若模型对经真实路径边界确认位于当前工作区内的 `write` / `edit` 错误申请 `danger-full-access`，插件会移除该误提权参数并按现有权限执行；工作区外路径、Shell 调用、工作区根不存在和其他无法确认的路径仍保留正常审批。
 - 该处理不会授予额外权限，符号链接等真实路径边界仍由 DSH 文件沙箱最终检查。
 - 保持部分包集、跨目录混装、清单损坏和非模块缺失错误时拒绝启动。
@@ -21,6 +22,28 @@
 5. 插件本体为纯 JavaScript，无平台限制；Linux/macOS 上沙箱实际生效依赖 DSH 宿主可用的沙箱后端（Linux 为 `bwrap` 或启用了 Landlock 的内核 5.13+），由 DSH 运行时自动探测。
 
 > DSH `0.1.3-alpha.1` 与 `0.1.3-alpha.2` 仍使用注册表全局静态 Schema；Session 当前模式和严格变宽仍在执行期处理，`approval=never` 仍主要依靠提示词。官方标签源码确认关键升级契约未改变；因这两个版本的公共 npm 包尚未上线，本次以标签源码审计、最新完整 `0.1.2-rc.1` 包集测试及 Ubuntu 24.04 实机验证作为依据，建议只在实际遇到同模式升级、空 justification 或重复重试问题后安装。
+
+## 通过 npm Registry 安装（推荐）
+
+本版本已发布到公共 npm Registry，包名为 `dsh-sandbox-escalation-fix`。因为这是预发布版本，它发布在 `next` 标签下（npm 首次发布时也会自动把 `latest` 指向它），安装时建议显式指定 `@next`：
+
+```sh
+dsh plugin --profile web add dsh-sandbox-escalation-fix@next
+```
+
+需要指定其他 Profile 时替换 `web`，例如：
+
+```sh
+dsh plugin --profile headless add dsh-sandbox-escalation-fix@next
+```
+
+也可以锁定到具体版本，避免以后跟随标签更新：
+
+```sh
+dsh plugin --profile web add dsh-sandbox-escalation-fix@0.1.3-alpha2-win-linux.1
+```
+
+npm 安装与 Release ZIP 中的 `.tgz` 使用同一份构建产物，二者行为一致。安装完成后重新启动 DSH，并新建 Session 验证工具调用。
 
 ## 安装到默认 Web Profile
 
@@ -97,6 +120,6 @@ sh ./uninstall-release.sh headless
 ## 注意事项
 
 - Release 目录只能保留一个 `dsh-sandbox-escalation-fix-*.tgz`，否则安装脚本会拒绝运行，避免安装错误版本。
-- 通过 npm Registry 安装时，预发布版必须带 `@next`；只写包名会尝试从 `latest` 标签安装，当前可能找不到版本。
+- 通过 npm Registry 安装时，包名为 `dsh-sandbox-escalation-fix`；因是预发布版本发布在 `next` 标签下（npm 首次发布时也会自动把 `latest` 指向它），安装时建议显式指定 `@next`。
 - 不需要手动编辑插件包内的 `cordis.patch.yml`；DSH CLI 会管理 Profile 依赖和 Bundle 层。
 - 安装、升级或卸载后都应完全重启 DSH，并在对应 Profile 中新建 Session 验证。

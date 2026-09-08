@@ -115,7 +115,7 @@ dsh --profile <profile>
 
 ### 通过 npm Registry 安装（推荐）
 
-插件已发布到公共 npm Registry，包名为 `dsh-sandbox-escalation-fix`。当前版本属于预发布版，发布在 `next` 标签下，因此安装时**必须显式带上 `@next`**；只写包名会去查 `latest` 标签，暂时还找不到可用版本。
+插件已发布到公共 npm Registry，包名为 `dsh-sandbox-escalation-fix`。当前版本属于预发布版，`next` 与 `latest` 都指向它（npm 首次发布时必定会创建 `latest`）。建议安装时**显式带上 `@next`** 或固定版本号，这样将来发布稳定版、`latest` 移动之后行为不会突然改变。
 
 ```sh
 dsh plugin --profile web add dsh-sandbox-escalation-fix@next
