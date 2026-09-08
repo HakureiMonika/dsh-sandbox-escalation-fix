@@ -7,7 +7,7 @@ English | [简体中文](README.zh.md)
 
 > [!CAUTION]
 > The DSH official team has made some improvements spanning from version `DSH 0.1.0-rc8` through `0.1.3-alpha.2`, but still use registry-global escalation schemas and execution-time validation. **Users should first observe the built-in behavior and install this plugin only after reproducing the same-mode escalation, blank justification, or retry-loop failures described below.**
-> 
+
 > Currently supported:<br>
 > Latest supported DSH version: `0.1.3-alpha.2` (full list in [Compatibility](#compatibility))<br>
 > Desktop version: `2.0.3`<br>
