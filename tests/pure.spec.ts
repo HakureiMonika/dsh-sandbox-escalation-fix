@@ -179,6 +179,9 @@ describe('execution compatibility', () => {
       .not.toThrow()
     expect(() => validateDshVersionSet({ tools: '0.1.5-alpha.1', sandbox: '0.1.5-alpha.1' }))
       .not.toThrow()
+    // alpha.2 相对 alpha.1 仅调整 FS 系统提示词与新增两个事件名，升级 Schema 契约未变，因此门禁直接放行。
+    expect(() => validateDshVersionSet({ tools: '0.1.5-alpha.2', sandbox: '0.1.5-alpha.2' }))
+      .not.toThrow()
     expect(() => validateDshVersionSet({ tools: '0.1.0-rc.5', sandbox: '0.1.0-rc.6' }))
       .toThrow(/mixed DSH package versions/)
     expect(() => validateDshVersionSet({ tools: '0.1.0-rc.9' }))
