@@ -1,125 +1,75 @@
-# dsh-sandbox-escalation-fix 0.1.3-alpha2-win-linux.1 使用说明
+# dsh-sandbox-escalation-fix 0.1.5-alpha1-win-linux 使用说明
 
 ## 版本内容
 
-- 正式支持 Linux：Release ZIP 新增 POSIX 安装与卸载脚本（`.sh`），插件本体为纯 JavaScript、无平台限制；已在 Ubuntu 24.04 实机（Landlock 沙箱后端）完成安装、Schema 投影与沙箱/审批行为验证。`.sh` 脚本预期同样适用于 macOS，但尚未在真实 Mac 上测试。
+- 支持 DSH `0.1.5-alpha.1`。官方该版本引入 Session V3、移除 `ctx.agent` 并调整 Inbox API；本插件不使用 `ctx.agent` 或 Inbox，依赖的 Agent Registry、工具包装、Sandbox Policy 与审批契约保持兼容。
+- 官方 `0.1.5-alpha.1` 的 Sandbox、Sandbox Policy、Approval、Bash、Pwsh、FS、Session Projection 与 Scope 源码相对 `0.1.3-alpha.2` 没有变化，仍使用注册表全局静态升级 Schema 与执行期严格变宽校验，因此本插件针对的问题仍可能出现。
+- 完整真实 `0.1.5-alpha.1` npm 包集下，40 项测试与 TypeScript 构建通过；插件核心 Supervisor、Wrapper、Schema 投影和参数正规化逻辑无需修改。
+- 正式支持 Linux：插件本体为纯 JavaScript、无平台限制；已在 Ubuntu 24.04 实机（Landlock 沙箱后端）完成安装、Schema 投影与沙箱/审批行为验证。`.sh` 脚本预期同样适用于 macOS，但尚未在真实 Mac 上测试。
 - 支持 DSH Desktop `2.0.3` 隐藏宿主包清单时的严格结构校验回退。
 - 支持通过 `link:`、工作区软链接或外部插件目录加载插件。
-- 支持 DSH `0.1.3-alpha.2`（同时保留 `0.1.3-alpha.1` 门禁），本插件会按每个 Session 的实际 Sandbox Mode 与 Approval Policy 投影升级字段。
-- 新增公共 npm Registry 分发；预发布版发布在 `next` 标签下，包名安装与 GitHub Release `.tgz` 使用同一份构建产物。
-- 在 `workspace-write` 下，若模型对经真实路径边界确认位于当前工作区内的 `write` / `edit` 错误申请 `danger-full-access`，插件会移除该误提权参数并按现有权限执行；工作区外路径、Shell 调用、工作区根不存在和其他无法确认的路径仍保留正常审批。
-- 该处理不会授予额外权限，符号链接等真实路径边界仍由 DSH 文件沙箱最终检查。
-- 保持部分包集、跨目录混装、清单损坏和非模块缺失错误时拒绝启动。
-- Git Commit 安装直接使用仓库内预构建的 `lib`，不再执行 `prepare`，无需在 Profile 中配置 `allowBuilds`。
-- 移除 `cordis.patch.yml` 的 UTF-8 BOM，避免部分 Windows 编码工具重复写回时叠加为多 BOM；旧版本建议及时更换为本版本。
+- 在 `workspace-write` 下，若模型对经真实路径边界确认位于当前工作区内的 `write` / `edit` 错误申请 `danger-full-access`，插件会移除该误提权参数并按现有权限执行；工作区外路径、Shell 调用和其他无法确认的路径仍保留正常审批。
+- 新版本继续发布到公共 npm Registry 的 `next` 标签；包名安装与 GitHub Release `.tgz` 使用同一份构建产物。
 
 ## 安装前准备
 
 1. 完全退出正在运行的 DSH 或 DSH Desktop。
-2. 解压 Release ZIP，确认本说明、四个安装/卸载脚本（Windows 的 `.ps1` 与 Linux/macOS 的 `.sh`）和 `.tgz` 文件位于同一目录。
-3. 在 PowerShell（Windows）或终端（Linux/macOS）中执行 `dsh --version`，确认 `dsh` 命令可用。
-4. 当前支持的 DSH 版本为 `0.1.0-rc.5`、`0.1.0-rc.6`、`0.1.0-rc.7`、`0.1.0-rc.8`、`0.1.1-rc.1`、`0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.2-alpha.2`、`0.1.2-alpha.3`、`0.1.2-alpha.4`、`0.1.2-alpha.5`、`0.1.2-rc.1`、`0.1.3-alpha.1` 和 `0.1.3-alpha.2`。
-5. 插件本体为纯 JavaScript，无平台限制；Linux/macOS 上沙箱实际生效依赖 DSH 宿主可用的沙箱后端（Linux 为 `bwrap` 或启用了 Landlock 的内核 5.13+），由 DSH 运行时自动探测。
+2. 解压 Release ZIP，确认本说明、四个安装/卸载脚本和 `.tgz` 文件位于同一目录。
+3. 执行 `dsh --version`，确认 `dsh` 命令可用。
+4. 当前支持的 DSH 版本为 `0.1.0-rc.5`、`0.1.0-rc.6`、`0.1.0-rc.7`、`0.1.0-rc.8`、`0.1.1-rc.1`、`0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.2-alpha.2`、`0.1.2-alpha.3`、`0.1.2-alpha.4`、`0.1.2-alpha.5`、`0.1.2-rc.1`、`0.1.3-alpha.1`、`0.1.3-alpha.2` 和 `0.1.5-alpha.1`。
 
-> DSH `0.1.3-alpha.1` 与 `0.1.3-alpha.2` 仍使用注册表全局静态 Schema；Session 当前模式和严格变宽仍在执行期处理，`approval=never` 仍主要依靠提示词。官方标签源码确认关键升级契约未改变；因这两个版本的公共 npm 包尚未上线，本次以标签源码审计、最新完整 `0.1.2-rc.1` 包集测试及 Ubuntu 24.04 实机验证作为依据，建议只在实际遇到同模式升级、空 justification 或重复重试问题后安装。
+> DSH `0.1.5-alpha.1` 仍使用注册表全局静态 Schema；Session 当前模式和严格变宽仍在执行期处理，`approval=never` 仍主要依靠提示词。建议只在实际遇到同模式升级、空 justification 或重复重试问题后安装。
 
 ## 通过 npm Registry 安装（推荐）
-
-本版本已发布到公共 npm Registry，包名为 `dsh-sandbox-escalation-fix`。因为这是预发布版本，它发布在 `next` 标签下（npm 首次发布时也会自动把 `latest` 指向它），安装时建议显式指定 `@next`：
 
 ```sh
 dsh plugin --profile web add dsh-sandbox-escalation-fix@next
 ```
 
-需要指定其他 Profile 时替换 `web`，例如：
+其他 Profile 将 `web` 替换为实际名称。也可以锁定具体版本：
 
 ```sh
-dsh plugin --profile headless add dsh-sandbox-escalation-fix@next
+dsh plugin --profile web add dsh-sandbox-escalation-fix@0.1.5-alpha1-win-linux
 ```
 
-也可以锁定到具体版本，避免以后跟随标签更新：
+## 通过 Release ZIP 安装
 
-```sh
-dsh plugin --profile web add dsh-sandbox-escalation-fix@0.1.3-alpha2-win-linux.1
-```
-
-npm 安装与 Release ZIP 中的 `.tgz` 使用同一份构建产物，二者行为一致。安装完成后重新启动 DSH，并新建 Session 验证工具调用。
-
-## 安装到默认 Web Profile
-
-Windows 在解压目录打开 PowerShell，然后执行：
+Windows：
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\install-release.ps1"
 ```
 
-Linux/macOS 在解压目录执行（ZIP 解压不保留执行位，因此用 `sh ./` 调用）：
+Linux/macOS：
 
 ```sh
 sh ./install-release.sh
 ```
 
-脚本会定位同目录中唯一的 `.tgz` 文件，并执行等效命令：
+安装到其他 Profile 时，Windows 使用 `-Profile headless`，Linux/macOS 将 `headless` 作为第一个参数。
 
-```powershell
-dsh plugin --profile web add <tgz绝对路径>
-```
+## 卸载
 
-安装完成后重新启动 DSH，并新建 Session 验证工具调用。
-
-## 安装到其他 Profile
-
-例如安装到 `headless`。Windows：
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File ".\install-release.ps1" -Profile headless
-```
-
-Linux/macOS 将 Profile 名作为第一个参数传入：
-
-```sh
-sh ./install-release.sh headless
-```
-
-## 从默认 Web Profile 卸载
-
-完全退出 DSH。Windows 在解压目录打开 PowerShell，然后执行：
+Windows：
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\uninstall-release.ps1"
 ```
 
-Linux/macOS 在解压目录执行：
+Linux/macOS：
 
 ```sh
 sh ./uninstall-release.sh
 ```
 
-等效命令为：
-
-```powershell
-dsh plugin --profile web remove dsh-sandbox-escalation-fix
-```
-
-卸载完成后重新启动 DSH。
-
-## 从其他 Profile 卸载
-
-例如从 `headless` 卸载。Windows：
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File ".\uninstall-release.ps1" -Profile headless
-```
-
-Linux/macOS：
+等效命令：
 
 ```sh
-sh ./uninstall-release.sh headless
+dsh plugin --profile web remove dsh-sandbox-escalation-fix
 ```
 
 ## 注意事项
 
-- Release 目录只能保留一个 `dsh-sandbox-escalation-fix-*.tgz`，否则安装脚本会拒绝运行，避免安装错误版本。
-- 通过 npm Registry 安装时，包名为 `dsh-sandbox-escalation-fix`；因是预发布版本发布在 `next` 标签下（npm 首次发布时也会自动把 `latest` 指向它），安装时建议显式指定 `@next`。
-- 不需要手动编辑插件包内的 `cordis.patch.yml`；DSH CLI 会管理 Profile 依赖和 Bundle 层。
 - 安装、升级或卸载后都应完全重启 DSH，并在对应 Profile 中新建 Session 验证。
+- 不需要手动编辑插件包内的 `cordis.patch.yml`；DSH CLI 会管理 Profile 依赖和 Bundle 层。
+- Linux/macOS 上沙箱实际生效依赖 DSH 宿主可用的沙箱后端；后端不可用时 DSH 会拒绝执行，不会绕过沙箱。

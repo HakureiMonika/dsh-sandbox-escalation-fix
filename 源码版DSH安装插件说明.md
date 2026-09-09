@@ -2,7 +2,7 @@
 
 源码版 DSH 不要运行 Release 里的 `install-release.ps1`，因为该脚本调用的是全局 `dsh` 命令。源码版需要在 DSH 仓库根目录使用 `pnpm dsh`。
 
-支持的 DSH 版本以 [README.zh.md 的支持范围](README.zh.md#支持范围) 为准（当前包含 `0.1.3-alpha.2`）。
+支持的 DSH 版本以 [README.zh.md 的支持范围](README.zh.md#支持范围) 为准（当前包含 `0.1.5-alpha.1`）。
 
 ## 1. 选择安装方式
 
@@ -25,10 +25,10 @@ pnpm dsh plugin --profile web add dsh-sandbox-escalation-fix@next
 pnpm dsh plugin --profile headless add dsh-sandbox-escalation-fix@next
 ```
 
-说明：当前版本是预发布版，发布在 `next` 标签下（npm 首次发布时也会自动创建 `latest`）。建议显式带上 `@next`，或固定到具体版本，避免将来稳定版发布、`latest` 移动后行为变化。固定版本示例：
+当前版本是预发布版，建议显式带上 `@next`，或固定到具体版本：
 
 ```powershell
-pnpm dsh plugin --profile web add dsh-sandbox-escalation-fix@0.1.3-alpha2-win-linux.1
+pnpm dsh plugin --profile web add dsh-sandbox-escalation-fix@0.1.5-alpha1-win-linux
 ```
 
 ## 3. 方式二：下载 `.tgz` 本地安装
@@ -40,7 +40,7 @@ https://github.com/HakureiMonika/dsh-sandbox-escalation-fix/releases/latest
 解压后找到：
 
 ```text
-dsh-sandbox-escalation-fix-0.1.3-alpha2-win-linux.1.tgz
+dsh-sandbox-escalation-fix-0.1.5-alpha1-win-linux.tgz
 ```
 
 注意：安装命令要使用解压后的 `.tgz` 文件，不要使用外层 `.zip` 文件。
@@ -61,10 +61,8 @@ pnpm run build
 
 ## 5. 安装本地 `.tgz`
 
-将下面的路径替换为电脑上的实际路径：
-
 ```powershell
-pnpm dsh plugin --profile web add "D:\下载目录\dsh-sandbox-escalation-fix-0.1.3-alpha2-win-linux.1.tgz"
+pnpm dsh plugin --profile web add "D:\下载目录\dsh-sandbox-escalation-fix-0.1.5-alpha1-win-linux.tgz"
 ```
 
 ## 6. 验证安装
@@ -85,15 +83,11 @@ pnpm dsh web
 
 ## 8. 升级插件
 
-重新执行对应安装命令即可，Profile 依赖会被更新：
-
 ```powershell
 pnpm dsh plugin --profile web add dsh-sandbox-escalation-fix@next
 ```
 
 ## 9. 卸载插件
-
-在 DSH 源码根目录执行：
 
 ```powershell
 pnpm dsh plugin --profile web remove dsh-sandbox-escalation-fix
@@ -104,8 +98,6 @@ pnpm dsh plugin --profile web remove dsh-sandbox-escalation-fix
 ## 常见问题
 
 ### `pnpm dsh` 报 `ERR_MODULE_NOT_FOUND`
-
-请在 DSH 源码根目录重新执行：
 
 ```powershell
 pnpm install
@@ -118,19 +110,9 @@ pnpm run build
 
 ### 安装时提示找不到插件包
 
-- 使用 npm 方式时，确认命令里的包名是 `dsh-sandbox-escalation-fix`，且带上了 `@next` 或具体版本号；
-- 使用本地 `.tgz` 时，确认路径指向解压后的 `.tgz` 文件，而不是外层 `.zip`。
+- npm 方式：确认包名为 `dsh-sandbox-escalation-fix`，且带 `@next` 或具体版本号；
+- 本地方式：确认路径指向解压后的 `.tgz`，不是外层 `.zip`。
 
 ## 命令区别
 
-正式安装版使用：
-
-```powershell
-dsh plugin ...
-```
-
-源码版使用：
-
-```powershell
-pnpm dsh plugin ...
-```
+正式安装版使用 `dsh plugin ...`，源码版使用 `pnpm dsh plugin ...`。
