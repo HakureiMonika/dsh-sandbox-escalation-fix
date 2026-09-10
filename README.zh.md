@@ -1,4 +1,4 @@
-# dsh-sandbox-escalation-fix（已支持 0.1.5-alpha.2，适配 Win & Linux & macOS）
+# dsh-sandbox-escalation-fix（已支持 0.1.5-rc.1，适配 Win & Linux & macOS）
 
 [English](README.md) | 中文
 
@@ -6,10 +6,10 @@
 > 这是独立开发的社区插件，不是 DeepSeek 官方发布、维护或背书的插件。它不会修改 DeepSeek Harness 的核心代码。
 
 > [!CAUTION]
-> 官方从 DSH `0.1.0-rc8` 一直到 `0.1.5-alpha.2` 已做部分改善，但仍使用注册表全局升级 Schema 和执行期校验。**建议用户先观察原生行为，仅在实际遇到本文所列的同模式升级、空 justification 或反复重试问题后再安装本插件。**
+> 官方从 DSH `0.1.0-rc8` 一直到 `0.1.5-rc.1` 已做部分改善，但仍使用注册表全局升级 Schema 和执行期校验。**建议用户先观察原生行为，仅在实际遇到本文所列的同模式升级、空 justification 或反复重试问题后再安装本插件。**
 
 > 目前已支持的：<br>
->> 最新 DSH 版本：`0.1.5-alpha.2`（完整列表见[支持范围](#支持范围)）<br>
+>> 最新 DSH 版本：`0.1.5-rc.1`（完整列表见[支持范围](#支持范围)）<br>
 >> Desktop 版本：`2.0.3`<br>
 >> 操作系统：`Windows` & `Linux` & `macOS`（理论支持，未实测）
 >  
@@ -130,17 +130,17 @@ dsh plugin --profile headless add dsh-sandbox-escalation-fix@next
 如果希望锁定到当前具体版本，避免以后跟随标签更新：
 
 ```sh
-dsh plugin --profile web add dsh-sandbox-escalation-fix@0.1.5-alpha2-win-linux
+dsh plugin --profile web add dsh-sandbox-escalation-fix@0.1.5-rc1-win-linux
 ```
 
 npm Registry 上的包与 GitHub Release ZIP 内的 `.tgz` 来自同一次构建，内容一致。安装完成后重启 DSH。
 
 ### Release ZIP 一键安装
 
-`0.1.5-alpha2-win-linux` Release 新增 DSH `0.1.5-alpha.2` 兼容。官方该版本仅新增 `deliverables/presented`、`subagent/catalog` 两个会话事件名，并把 `read`/`write`/`edit` 的系统提示词改为按 Scope 判断是否展示，沙箱升级 Schema 与执行期严格变宽校验未改动，因此插件核心逻辑无需修改。本版继续保留 DSH `0.1.5-alpha.1` 兼容（Session V3、移除 `ctx.agent` 与 Inbox API 调整均未影响本插件），完整真实 `0.1.5-alpha.2` npm 包集下 40/40 测试与 TypeScript 构建通过。本版继续支持 Windows、Linux（Ubuntu 24.04 实机验证）和理论兼容的 macOS，并保留 Desktop 2.0.3、软链接/外部插件目录、无 `prepare` Git 安装和无 BOM 配置支持。新版 Release ZIP 解压后包含以下六个文件：
+`0.1.5-rc1-win-linux` Release 新增 DSH `0.1.5-rc.1` 兼容。官方 `0.1.5-rc.1` 与 `0.1.5-alpha.2` 的 15 个插件相关发布包（Agent、LLM、Sandbox、Sandbox Policy、Scope、Session、Session Projection、System Prompt、Tools、Approval、Code Runtime、Tool Bash、Tool Pwsh、Tool FS、Shell）逐字节一致，共 244 个文件 0 处差异；沙箱升级 Schema 与执行期严格变宽校验未改动，因此插件核心逻辑无需修改。本版继续保留 DSH `0.1.5-alpha.1` 兼容（Session V3、移除 `ctx.agent` 与 Inbox API 调整均未影响本插件），完整真实 `0.1.5-rc.1` npm 包集下 40/40 测试与 TypeScript 构建通过。本版继续支持 Windows、Linux（Ubuntu 24.04 实机验证）和理论兼容的 macOS，并保留 Desktop 2.0.3、软链接/外部插件目录、无 `prepare` Git 安装和无 BOM 配置支持。新版 Release ZIP 解压后包含以下六个文件：
 
 ```text
-dsh-sandbox-escalation-fix-0.1.5-alpha2-win-linux.tgz
+dsh-sandbox-escalation-fix-0.1.5-rc1-win-linux.tgz
 install-release.ps1
 uninstall-release.ps1
 install-release.sh
@@ -148,7 +148,7 @@ uninstall-release.sh
 RELEASE-USAGE.zh.md
 ```
 
-安装或升级前先完全关闭 DSH。执行脚本前，请确认系统已将 `dsh` 命令加入 PATH，且当前 DSH 使用的是 rc5、rc6、rc7、rc8、`0.1.1-rc.1`、`0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.2-alpha.2`、`0.1.2-alpha.3`、`0.1.2-alpha.4`、`0.1.2-alpha.5`、`0.1.2-rc.1`、`0.1.3-alpha.1` 或 `0.1.3-alpha.2`。建议先实际复现同类错误，再决定是否安装。
+安装或升级前先完全关闭 DSH。执行脚本前，请确认系统已将 `dsh` 命令加入 PATH，且当前 DSH 使用的是 rc5、rc6、rc7、rc8、`0.1.1-rc.1`、`0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.2-alpha.2`、`0.1.2-alpha.3`、`0.1.2-alpha.4`、`0.1.2-alpha.5`、`0.1.2-rc.1`、`0.1.3-alpha.1`、`0.1.3-alpha.2`、`0.1.5-alpha.1`、`0.1.5-alpha.2` 或 `0.1.5-rc.1`。建议先实际复现同类错误，再决定是否安装。
 
 #### 安装到默认 Web Profile
 
@@ -196,7 +196,7 @@ sh ./install-release.sh headless
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
 ```
 
-该脚本会先构建 `lib`，再执行 `npm pack` 生成 `.tgz`，最后在 `release` 目录生成 `dsh-sandbox-escalation-fix-0.1.5-alpha2-win-linux-release.zip`。ZIP 内含 tarball、四个一键脚本和简明中文使用说明；上传 GitHub Release 时只需上传该 ZIP。
+该脚本会先构建 `lib`，再执行 `npm pack` 生成 `.tgz`，最后在 `release` 目录生成 `dsh-sandbox-escalation-fix-0.1.5-rc1-win-linux-release.zip`。ZIP 内含 tarball、四个一键脚本和简明中文使用说明；上传 GitHub Release 时只需上传该 ZIP。
 
 ### 通过命令行安装
 
@@ -588,11 +588,11 @@ Session B = danger-full-access + never   → 看不到升级字段
 
 ### 它不会只支持单一 DSH 版本
 
-插件同时支持 DSH `0.1.0-rc.5`、`0.1.0-rc.6`、`0.1.0-rc.7`、`0.1.0-rc.8`、`0.1.1-rc.1`、`0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.2-alpha.2`、`0.1.2-alpha.3`、`0.1.2-alpha.4`、`0.1.2-alpha.5`、`0.1.2-rc.1`、`0.1.3-alpha.1`、`0.1.3-alpha.2`、`0.1.5-alpha.1` 和 `0.1.5-alpha.2`，并在加载时校验 DSH 各包版本是否一致且受支持。遇到不兼容的工具定义会主动拒绝安装，而不是在运行中产生难以排查的诡异行为。
+插件同时支持 DSH `0.1.0-rc.5`、`0.1.0-rc.6`、`0.1.0-rc.7`、`0.1.0-rc.8`、`0.1.1-rc.1`、`0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.2-alpha.2`、`0.1.2-alpha.3`、`0.1.2-alpha.4`、`0.1.2-alpha.5`、`0.1.2-rc.1`、`0.1.3-alpha.1`、`0.1.3-alpha.2`、`0.1.5-alpha.1`、`0.1.5-alpha.2` 和 `0.1.5-rc.1`，并在加载时校验 DSH 各包版本是否一致且受支持。遇到不兼容的工具定义会主动拒绝安装，而不是在运行中产生难以排查的诡异行为。
 
 ### 它不会给你增加配置负担
 
-零配置，安装到实际使用的 Profile 后即可生效。测试覆盖 40 项，直接使用完整真实 DSH `0.1.5-alpha.2` npm 包集；同时对官方不可变标签完成源码契约审计。覆盖 Schema 投影、工作区文件误提权正规化、父目录、符号链接与工作区根不可确认时的保留、PTC Mode 元数据、动态限制、多 Agent 隔离、Delegate 与协作包装器替换、内部超时预算透传、失败提示清理和插件卸载等关键路径。
+零配置，安装到实际使用的 Profile 后即可生效。测试覆盖 40 项，直接使用完整真实 DSH `0.1.5-rc.1` npm 包集；同时对官方不可变标签完成源码契约审计。覆盖 Schema 投影、工作区文件误提权正规化、父目录、符号链接与工作区根不可确认时的保留、PTC Mode 元数据、动态限制、多 Agent 隔离、Delegate 与协作包装器替换、内部超时预算透传、失败提示清理和插件卸载等关键路径。
 
 ### 与“仅执行期止血”方案的区别
 
@@ -641,7 +641,7 @@ dsh web: http://127.0.0.1:3080
 
 自动测试直接使用真实 DSH `SessionStore`、`ToolRuntime`、`AgentRegistry`、`SandboxPolicyService`、`ApprovalService` 和 `SystemPrompt` 包，而不是只测试隔离 Mock。40 项测试覆盖：
 
-当前运行时集成基线是公共 npm 已发布的完整 DSH `0.1.5-alpha.2` 包集，并包含 `SessionProjectionService` 组合依赖。官方该版本的 Session V3、Agent API 与 Inbox API 变化未影响本插件；相对 `0.1.5-alpha.1`，`0.1.5-alpha.2` 仅新增两个会话事件名并把 `read`/`write`/`edit` 系统提示词改为按 Scope 判断展示，Sandbox、Sandbox Policy、Approval、Bash、Pwsh、Session Projection 与 Scope 源码无变化，升级 Schema 契约未被触及。自动测试不能完全替代真实模型 Provider 的 E2E 验证。
+当前运行时集成基线是公共 npm 已发布的完整 DSH `0.1.5-rc.1` 包集，并包含 `SessionProjectionService` 组合依赖。官方该版本的 Session V3、Agent API 与 Inbox API 变化未影响本插件；官方 `0.1.5-rc.1` 与 `0.1.5-alpha.2` 的全部插件相关发布产物逐字节一致；Sandbox、Sandbox Policy、Approval、Bash、Pwsh、Session Projection 与 Scope 源码无变化，升级 Schema 契约未被触及。自动测试不能完全替代真实模型 Provider 的 E2E 验证。
 
 - 权限矩阵；
 - 精确同模式正规化；
@@ -711,14 +711,14 @@ import {
 ## 支持范围
 
 - Node.js `^22.19.0` 或 `>=24.0.0`
-- `@deepseek-ai/dsh-*` `0.1.0-rc.5`、`0.1.0-rc.6`、`0.1.0-rc.7`、`0.1.0-rc.8`、`0.1.1-rc.1`、`0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.2-alpha.2`、`0.1.2-alpha.3`、`0.1.2-alpha.4`、`0.1.2-alpha.5`、`0.1.2-rc.1`、`0.1.3-alpha.1`、`0.1.3-alpha.2`
+- `@deepseek-ai/dsh-*` `0.1.0-rc.5`、`0.1.0-rc.6`、`0.1.0-rc.7`、`0.1.0-rc.8`、`0.1.1-rc.1`、`0.1.1-rc.2`、`0.1.2-alpha.1`、`0.1.2-alpha.2`、`0.1.2-alpha.3`、`0.1.2-alpha.4`、`0.1.2-alpha.5`、`0.1.2-rc.1`、`0.1.3-alpha.1`、`0.1.3-alpha.2`、`0.1.5-alpha.1`、`0.1.5-alpha.2`、`0.1.5-rc.1`
 - `@deepseek-ai/cordis` `^4.0.1`
 - 分发方式：公共 npm Registry（包名 `dsh-sandbox-escalation-fix`，预发布版位于 `next` 标签）、GitHub Release ZIP、本地 `.tgz`、本地目录或 Git Commit
 - 操作系统：Windows（完整支持）、Linux（已在 Ubuntu 24.04 实机验证）、macOS（预期兼容——插件为纯 JavaScript、`.sh` 脚本遵循 POSIX——但尚未在真实 Mac 上测试）。插件本体无平台相关代码；Linux/macOS 上沙箱的实际生效依赖 DSH 宿主可用的沙箱后端（Linux 为 `bwrap` 或启用了 Landlock 的内核 5.13+，macOS 为 Seatbelt），由 DSH 运行时自动探测；后端不可用时 DSH 会拒绝执行而不是绕过沙箱。插件的权限投影与参数正规化不依赖特定沙箱后端。
 
 插件针对这些版本的公开 Scope、ToolRuntime、Sandbox Policy 与 Approval Service 契约构建。Agent 初次创建时，已可见的目标工具定义或同 Scope 包装协议不兼容会严格拒绝该 Agent 注册。
 
-启动时会读取关键 `@deepseek-ai/dsh-*` 包的实际版本；所有受检包必须使用同一个已支持版本（包括 `0.1.5-alpha.1`、`0.1.5-alpha.2`），混装或未知版本会拒绝启动。目标工具同时省略两个升级字段时视为已经安全。运行期的 Preset 限制或 Provider 稳定删除会让包装器进入休眠；运行期替换为字段残缺或输出定义不兼容的工具时，只隔离对应 Agent 的对应工具并记录警告，不会终止 Host 进程，后续兼容定义出现时自动恢复。
+启动时会读取关键 `@deepseek-ai/dsh-*` 包的实际版本；所有受检包必须使用同一个已支持版本（包括 `0.1.5-alpha.1`、`0.1.5-alpha.2`、`0.1.5-rc.1`），混装或未知版本会拒绝启动。目标工具同时省略两个升级字段时视为已经安全。运行期的 Preset 限制或 Provider 稳定删除会让包装器进入休眠；运行期替换为字段残缺或输出定义不兼容的工具时，只隔离对应 Agent 的对应工具并记录警告，不会终止 Host 进程，后续兼容定义出现时自动恢复。
 
 ## 贡献者
 

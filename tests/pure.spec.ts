@@ -182,6 +182,9 @@ describe('execution compatibility', () => {
     // alpha.2 相对 alpha.1 仅调整 FS 系统提示词与新增两个事件名，升级 Schema 契约未变，因此门禁直接放行。
     expect(() => validateDshVersionSet({ tools: '0.1.5-alpha.2', sandbox: '0.1.5-alpha.2' }))
       .not.toThrow()
+    // rc.1 与 alpha.2 的全部插件相关发布产物逐字节一致，升级 Schema 与执行期校验契约未变，因此门禁直接放行。
+    expect(() => validateDshVersionSet({ tools: '0.1.5-rc.1', sandbox: '0.1.5-rc.1' }))
+      .not.toThrow()
     expect(() => validateDshVersionSet({ tools: '0.1.0-rc.5', sandbox: '0.1.0-rc.6' }))
       .toThrow(/mixed DSH package versions/)
     expect(() => validateDshVersionSet({ tools: '0.1.0-rc.9' }))
