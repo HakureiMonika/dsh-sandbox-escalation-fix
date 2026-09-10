@@ -185,6 +185,10 @@ describe('execution compatibility', () => {
     // rc.1 与 alpha.2 的全部插件相关发布产物逐字节一致，升级 Schema 与执行期校验契约未变，因此门禁直接放行。
     expect(() => validateDshVersionSet({ tools: '0.1.5-rc.1', sandbox: '0.1.5-rc.1' }))
       .not.toThrow()
+    // rc.2 相对 rc.1：15 个包共 228 个文件除 package.json 外零差异，package.json 也只同步提升了各包依赖范围，
+    // 升级 Schema、严格变宽校验与插件依赖的运行时契约均未变化，因此门禁直接放行。
+    expect(() => validateDshVersionSet({ tools: '0.1.5-rc.2', sandbox: '0.1.5-rc.2' }))
+      .not.toThrow()
     expect(() => validateDshVersionSet({ tools: '0.1.0-rc.5', sandbox: '0.1.0-rc.6' }))
       .toThrow(/mixed DSH package versions/)
     expect(() => validateDshVersionSet({ tools: '0.1.0-rc.9' }))
