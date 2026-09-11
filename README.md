@@ -192,6 +192,8 @@ Install into the exact Profile that runs the affected sessions and pin a reviewe
 dsh plugin --profile <profile> add github:<owner>/dsh-sandbox-escalation-fix#<commit-sha>
 ```
 
+> **Important: do not omit `#<commit-sha>`.** Using only `github:<owner>/dsh-sandbox-escalation-fix` installs a snapshot of the repository HEAD at the time the command runs. Later repository updates are not synchronized automatically to the installed Profile, and the local snapshot cannot be assumed to match the repository's current code. Before diagnosing compatibility, verify the installed revision and explicitly upgrade to a newly reviewed commit SHA.
+
 The package has no `prepare` or other install-time build script: pnpm installs the committed, prebuilt `lib` directly and no `allowBuilds` allowlist entry is needed. Versions before the `prepare` removal did run a build on install; if such an old version left a `dsh-sandbox-escalation-fix@https://codeload.github.com/...` entry under `allowBuilds` in `$DSH_HOME/profiles/<profile>/pnpm-workspace.yaml`, that stale entry can be removed after upgrading.
 
 Run the installation command again, then inspect the composed configuration:
@@ -259,6 +261,8 @@ dsh plugin --profile <profile> add dsh-sandbox-escalation-fix@next
 If you previously pinned an exact version, replace the version in that command with the new one. Inspect `--dump-config`, then restart DSH.
 
 #### GitHub commit installation
+
+> **GitHub commit installations do not follow repository updates automatically.** Even if `main` has fixed the issue or added support for a newer DSH version, the local Profile keeps its previously installed snapshot. Every upgrade must explicitly replace the old SHA with a new reviewed commit SHA and rerun the installation command.
 
 Run the same installation command with the new reviewed commit SHA:
 

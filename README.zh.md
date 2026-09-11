@@ -206,6 +206,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
 dsh plugin --profile <profile> add github:<owner>/dsh-sandbox-escalation-fix#<commit-sha>
 ```
 
+> **重要：不要省略 `#<commit-sha>`。** 如果只写 `github:<owner>/dsh-sandbox-escalation-fix`，DSH 安装的是执行命令当时的仓库 HEAD 快照；仓库后续更新不会自动同步到已经安装的 Profile，也不能据此判断本机快照与仓库当前代码一致。排查兼容问题前，请先核对并主动升级到已经审核的新 Commit SHA。
+
 也可以从本地目录安装：
 
 ```sh
@@ -452,6 +454,8 @@ dsh plugin --profile <profile> add dsh-sandbox-escalation-fix@next
 如果之前锁定过具体版本，把命令中的版本号替换为新版本即可。安装完成后检查 `--dump-config`，然后重新启动 DSH。
 
 #### 通过 GitHub Commit 安装的用户
+
+> **GitHub Commit 安装不会自动跟随仓库更新。** 即使 `main` 已经修复问题或支持新版 DSH，本机 Profile 仍会保留原安装快照；每次升级都必须主动更换为新的、已经审核过的 Commit SHA，并重新执行安装命令。
 
 将原安装命令中的 Commit SHA 换成新的、已经审核过的 SHA，再执行同一条命令：
 
