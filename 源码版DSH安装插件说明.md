@@ -2,7 +2,7 @@
 
 源码版 DSH 不要运行 Release 里的 `install-release.ps1`，因为该脚本调用的是全局 `dsh` 命令。源码版需要在 DSH 仓库根目录使用 `pnpm dsh`。
 
-支持的 DSH 版本以 [README.zh.md 的支持范围](README.zh.md#支持范围) 为准（当前包含 `0.1.6-alpha.2`）。
+支持的 DSH 版本以 [README.zh.md 的支持范围](README.zh.md#支持范围) 为准：插件不再维护逐版本白名单，启动时只要求所有受检 `@deepseek-ai/dsh-*` 包版本一致（`0.1.6-alpha.2` 与 `0.2.2-rc.1` 均已实测）。
 
 ## 1. 选择安装方式
 
@@ -28,7 +28,7 @@ pnpm dsh plugin --profile headless add dsh-sandbox-escalation-fix@latest
 当前 `latest` 与 `next` 指向同一最新兼容版本；也可以固定到具体版本：
 
 ```powershell
-pnpm dsh plugin --profile web add dsh-sandbox-escalation-fix@0.1.6-alpha2-win-linux
+pnpm dsh plugin --profile web add dsh-sandbox-escalation-fix@0.2.0-win-linux
 ```
 
 ## 3. 方式二：下载 `.tgz` 本地安装
@@ -40,7 +40,7 @@ https://github.com/HakureiMonika/dsh-sandbox-escalation-fix/releases/latest
 解压后找到：
 
 ```text
-dsh-sandbox-escalation-fix-0.1.6-alpha2-win-linux.tgz
+dsh-sandbox-escalation-fix-0.2.0-win-linux.tgz
 ```
 
 注意：安装命令要使用解压后的 `.tgz` 文件，不要使用外层 `.zip` 文件。
@@ -62,7 +62,7 @@ pnpm run build
 ## 5. 安装本地 `.tgz`
 
 ```powershell
-pnpm dsh plugin --profile web add "D:\下载目录\dsh-sandbox-escalation-fix-0.1.6-alpha2-win-linux.tgz"
+pnpm dsh plugin --profile web add "D:\下载目录\dsh-sandbox-escalation-fix-0.2.0-win-linux.tgz"
 ```
 
 ## 6. 验证安装
