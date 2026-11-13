@@ -5,6 +5,8 @@ import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 export interface EscalationNormalizationContext {
   toolName?: string
   workspaceRoot?: string
+  /** 本次调用真正可获批的升权目标；给出时，不在其中的请求一律视为不可执行。 */
+  viableTargets?: readonly SandboxMode[]
 }
 
 function withoutEscalation(record: Record<string, unknown>): Record<string, unknown> {
@@ -67,6 +69,12 @@ export function normalizeEscalationArguments(
     && (context.toolName === 'write' || context.toolName === 'edit')
     && isWorkspaceFilePath(record.file_path, context.workspaceRoot)
   ) {
+    return withoutEscalation(record)
+  }
+  // 比当前模式更窄，或审批策略根本不批的目标，会在执行期被变宽阶梯直接抛错并中断整次调用；
+  // 这类参数既拿不到权限也不该拖垮调用，因此成对丢弃。
+  if (context.viableTargets !== undefined
+    && !context.viableTargets.includes(record.sandbox_permissions as SandboxMode)) {
     return withoutEscalation(record)
   }
   return args

@@ -2,8 +2,8 @@ import { createRequire } from 'node:module'
 import { join } from 'node:path'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 
-// 仅列入已完成真实包测试或标签源码契约审计的 DSH 版本，避免仅凭 semver 范围放行未知契约。
-export const SUPPORTED_DSH_VERSIONS = ['0.1.0-rc.5', '0.1.0-rc.6', '0.1.0-rc.7', '0.1.0-rc.8', '0.1.1-rc.1', '0.1.1-rc.2', '0.1.2-alpha.1', '0.1.2-alpha.2', '0.1.2-alpha.3', '0.1.2-alpha.4', '0.1.2-alpha.5', '0.1.2-rc.1', '0.1.3-alpha.1', '0.1.3-alpha.2', '0.1.5-alpha.1', '0.1.5-alpha.2', '0.1.5-rc.1', '0.1.5-rc.2', '0.1.6-alpha.1', '0.1.6-alpha.2'] as const
+// DSH 的包版本与桌面版同步发版，逐版本白名单会随每次升级把插件锁死在旧号上，
+// 因此版本号不再作为门禁：只要受检包集版本一致，兼容性交由 validateTargetTool 的结构校验判定。
 
 const DSH_PACKAGES = [
   '@deepseek-ai/dsh-agent',
@@ -68,10 +68,6 @@ export function validateDshVersionSet(
       .map(([name, version]) => `${name}@${version}`)
       .join(', ')
     throw new Error(`dsh-sandbox-escalation-fix: mixed DSH package versions are unsupported: ${detail}`)
-  }
-  const version = unique.values().next().value
-  if (version === undefined || !SUPPORTED_DSH_VERSIONS.includes(version as typeof SUPPORTED_DSH_VERSIONS[number])) {
-    throw new Error(`dsh-sandbox-escalation-fix: unsupported DSH version "${version ?? 'unknown'}"; supported versions: ${SUPPORTED_DSH_VERSIONS.join(', ')}`)
   }
 }
 

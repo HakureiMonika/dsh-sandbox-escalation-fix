@@ -126,6 +126,32 @@ describe('execution compatibility', () => {
     }
   })
 
+  it('drops escalation targets that can never be granted', () => {
+    const args = Object.freeze({
+      file_path: 'out.txt',
+      content: 'updated',
+      sandbox_permissions: 'workspace-write',
+      justification: 'stale narrower request',
+    })
+    // 全权限下任何升权都是空操作。
+    expect(normalizeEscalationArguments(args, 'danger-full-access', { viableTargets: [] }))
+      .toEqual({ file_path: 'out.txt', content: 'updated' })
+    // workspace-write 下比当前更窄的请求同样批不下来。
+    expect(normalizeEscalationArguments(args, 'workspace-write', { viableTargets: ['danger-full-access'] }))
+      .toEqual({ file_path: 'out.txt', content: 'updated' })
+    // 可获批的目标保持原样，交由执行期审批处理。
+    expect(normalizeEscalationArguments(
+      { ...args, sandbox_permissions: 'danger-full-access' },
+      'workspace-write',
+      { viableTargets: ['danger-full-access'] },
+    )).toEqual({
+      file_path: 'out.txt',
+      content: 'updated',
+      sandbox_permissions: 'danger-full-access',
+      justification: 'stale narrower request',
+    })
+  })
+
   it('accepts an already-safe target and rejects a partial escalation schema', () => {
     expect(() => validateTargetTool({
       name: 'pwsh',
@@ -152,56 +178,12 @@ describe('execution compatibility', () => {
     })).toThrow(/must expose sandbox_permissions and justification together or omit both/)
   })
 
-  it('accepts one supported DSH release and rejects mixed or unknown versions', () => {
-    expect(() => validateDshVersionSet({ tools: '0.1.0-rc.6', sandbox: '0.1.0-rc.6' }))
-      .not.toThrow()
-    expect(() => validateDshVersionSet({ tools: '0.1.0-rc.7', sandbox: '0.1.0-rc.7' }))
-      .not.toThrow()
-    expect(() => validateDshVersionSet({ tools: '0.1.0-rc.8', sandbox: '0.1.0-rc.8' }))
-      .not.toThrow()
-    expect(() => validateDshVersionSet({ tools: '0.1.1-rc.1', sandbox: '0.1.1-rc.1' }))
-      .not.toThrow()
-    expect(() => validateDshVersionSet({ tools: '0.1.1-rc.2', sandbox: '0.1.1-rc.2' }))
-      .not.toThrow()
-    expect(() => validateDshVersionSet({ tools: '0.1.2-alpha.1', sandbox: '0.1.2-alpha.1' }))
-      .not.toThrow()
-    expect(() => validateDshVersionSet({ tools: '0.1.2-alpha.2', sandbox: '0.1.2-alpha.2' }))
-      .not.toThrow()
-    expect(() => validateDshVersionSet({ tools: '0.1.2-alpha.3', sandbox: '0.1.2-alpha.3' }))
-      .not.toThrow()
-    expect(() => validateDshVersionSet({ tools: '0.1.2-alpha.4', sandbox: '0.1.2-alpha.4' }))
-      .not.toThrow()
-    expect(() => validateDshVersionSet({ tools: '0.1.2-alpha.5', sandbox: '0.1.2-alpha.5' }))
-      .not.toThrow()
-    expect(() => validateDshVersionSet({ tools: '0.1.2-rc.1', sandbox: '0.1.2-rc.1' }))
-      .not.toThrow()
-    expect(() => validateDshVersionSet({ tools: '0.1.3-alpha.2', sandbox: '0.1.3-alpha.2' }))
-      .not.toThrow()
-    expect(() => validateDshVersionSet({ tools: '0.1.5-alpha.1', sandbox: '0.1.5-alpha.1' }))
-      .not.toThrow()
-    // alpha.2 相对 alpha.1 仅调整 FS 系统提示词与新增两个事件名，升级 Schema 契约未变，因此门禁直接放行。
-    expect(() => validateDshVersionSet({ tools: '0.1.5-alpha.2', sandbox: '0.1.5-alpha.2' }))
-      .not.toThrow()
-    // rc.1 与 alpha.2 的全部插件相关发布产物逐字节一致，升级 Schema 与执行期校验契约未变，因此门禁直接放行。
-    expect(() => validateDshVersionSet({ tools: '0.1.5-rc.1', sandbox: '0.1.5-rc.1' }))
-      .not.toThrow()
-    // rc.2 相对 rc.1：15 个包共 228 个文件除 package.json 外零差异，package.json 也只同步提升了各包依赖范围，
-    // 升级 Schema、严格变宽校验与插件依赖的运行时契约均未变化，因此门禁直接放行。
-    expect(() => validateDshVersionSet({ tools: '0.1.5-rc.2', sandbox: '0.1.5-rc.2' }))
-      .not.toThrow()
-    // alpha.1 虽然重构了 Agent 创建时序、PTC Runtime 和沙箱后端接口，但插件依赖的 Agent 事件载荷、
-    // ToolRuntime waterfall、SandboxPolicy.resolve()、静态升级 Schema 与执行期严格变宽契约仍保持兼容。
-    expect(() => validateDshVersionSet({ tools: '0.1.6-alpha.1', sandbox: '0.1.6-alpha.1' }))
-      .not.toThrow()
-    // alpha.2 只让请求模式等于当前有效模式时直接返回，避免进入重复审批；注册表全局 Schema、固定升级目标词表、
-    // 真正升级时的执行期严格变宽校验，以及插件依赖的 Agent、Tools、Sandbox Policy 与 Pwsh 契约均未改变。
-    // 因此插件仍兼容且仍需按 Session 投影模型可见 Schema，版本门禁可以安全放行该完整同版本包集。
-    expect(() => validateDshVersionSet({ tools: '0.1.6-alpha.2', sandbox: '0.1.6-alpha.2' }))
-      .not.toThrow()
+  it('accepts any coherent DSH release set and rejects mixed versions', () => {
+    expect(() => validateDshVersionSet({ tools: '0.1.0-rc.6', sandbox: '0.1.0-rc.6' })).not.toThrow()
+    // 版本号不再充当门禁：新版桌面/包版本号直接放行，真正的兼容性由工具契约校验在挂载时判定。
+    expect(() => validateDshVersionSet({ tools: '0.2.2-rc.1', sandbox: '0.2.2-rc.1' })).not.toThrow()
     expect(() => validateDshVersionSet({ tools: '0.1.0-rc.5', sandbox: '0.1.0-rc.6' }))
       .toThrow(/mixed DSH package versions/)
-    expect(() => validateDshVersionSet({ tools: '0.1.0-rc.9' }))
-      .toThrow(/unsupported DSH version/)
   })
 
   it('falls back only when every DSH package manifest is hidden', () => {

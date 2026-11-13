@@ -64,6 +64,7 @@ function ownLayer(ctx: Context, agent: Agent, toolName: TargetToolName): Wrapper
       return next(normalizeEscalationArguments(args, policy.mode, {
         toolName,
         workspaceRoot: policy.workspaceRoot,
+        viableTargets: escalationPolicyFor(ctx, callAgent).viableTargets,
       }))
     },
   }
