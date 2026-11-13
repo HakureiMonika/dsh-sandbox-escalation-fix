@@ -8,10 +8,10 @@ English | [简体中文](README.zh.md)
 > [!CAUTION]
 > DSH `0.1.6-alpha.2` has significantly mitigated the issue addressed by this plugin. In testing, a model may still fail its first tool call because of unsuitable sandbox-escalation arguments, but it will usually adjust those arguments after receiving the error and eventually complete the call successfully. Escalation schemas remain registry-global and are still not narrowed according to each Session's current permissions, so the underlying cause has not been fully removed. However, users who can tolerate a small number of retries and some additional token usage may now find the official behavior acceptable. **Users should try the official behavior first and install this plugin only when the remaining retries, overhead, or instability are unacceptable.**
 >
-> **Given the current effectiveness of the official improvements, this plugin may stop being maintained after the next official release. If you still need this plugin to be maintained at that time, please proactively open an issue, and the developer will respond as soon as possible.**
+> **This plugin is under minimal passive maintenance: new DSH releases are not tracked proactively, and compatibility is evaluated only when an issue is reported.** The current final release is `v0.2.0-win-linux`; compatibility is decided by contract assertions, so a release that only bumps version numbers usually needs no change here. If you need it to keep up with newer DSH versions, open an issue describing your case, or fork it and maintain it yourself.
 
 > Currently supported:<br>
-> DSH version: any DSH release whose `@deepseek-ai/dsh-*` packages agree on one version; there is no per-version whitelist (both `0.1.6-alpha.2` and `0.2.2-rc.1` are verified — see [Compatibility](#compatibility))<br>
+> DSH version: any DSH release whose `@deepseek-ai/dsh-*` packages agree on one version; there is no per-version whitelist (`0.2.2-rc.2` verified; see [Compatibility](#compatibility))<br>
 > Desktop version: `2.0.3`<br>
 > OS: `Windows` & `Linux`  & `macOS` (theoretically supported, not yet tested)
 >  
