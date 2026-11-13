@@ -1,4 +1,4 @@
-# dsh-sandbox-escalation-fix (DSH 0.1.6-alpha.2 supported, Win & Linux & macOS)
+# dsh-sandbox-escalation-fix (DSH 0.2.2-rc.1 ready, no version whitelist, Win & Linux & macOS)
 
 English | [简体中文](README.zh.md)
 
@@ -11,7 +11,7 @@ English | [简体中文](README.zh.md)
 > **Given the current effectiveness of the official improvements, this plugin may stop being maintained after the next official release. If you still need this plugin to be maintained at that time, please proactively open an issue, and the developer will respond as soon as possible.**
 
 > Currently supported:<br>
-> Latest supported DSH version: `0.1.6-alpha.2` (full list in [Compatibility](#compatibility))<br>
+> DSH version: any DSH release whose `@deepseek-ai/dsh-*` packages agree on one version; there is no per-version whitelist (both `0.1.6-alpha.2` and `0.2.2-rc.1` are verified — see [Compatibility](#compatibility))<br>
 > Desktop version: `2.0.3`<br>
 > OS: `Windows` & `Linux`  & `macOS` (theoretically supported, not yet tested)
 >  
@@ -103,12 +103,12 @@ After installation, the same model can continue through Edit, Read, Pwsh, format
 ## Compatibility
 
 - Node.js `^22.19.0` or `>=24.0.0`
-- `@deepseek-ai/dsh-*` `0.1.0-rc.5`, `0.1.0-rc.6`, `0.1.0-rc.7`, `0.1.0-rc.8`, `0.1.1-rc.1`, `0.1.1-rc.2`, `0.1.2-alpha.1`, `0.1.2-alpha.2`, `0.1.2-alpha.3`, `0.1.2-alpha.4`, `0.1.2-alpha.5`, `0.1.2-rc.1`, `0.1.3-alpha.1`, `0.1.3-alpha.2`, `0.1.5-alpha.1`, `0.1.5-alpha.2`, `0.1.5-rc.1`, `0.1.5-rc.2`, `0.1.6-alpha.1`, or `0.1.6-alpha.2`
+- `@deepseek-ai/dsh-*` any version, as long as every checked package in the same Profile reports the same one (the per-version whitelist was removed; `0.1.6-alpha.2` and `0.2.2-rc.1` are both verified)
 - `@deepseek-ai/cordis` `^4.0.1`
 - Distribution: public npm Registry (package `dsh-sandbox-escalation-fix`; `latest` and `next` point to the newest compatible release), GitHub Release ZIP, local `.tgz`, local directory, or a Git commit
 - Operating systems: Windows (fully supported), Linux (verified on real Ubuntu 24.04), and macOS (expected compatible — the plugin is pure JavaScript and the `.sh` scripts are POSIX — but not yet tested on a real Mac). The plugin itself has no platform-specific code; actual sandbox enforcement on Linux/macOS depends on the sandbox backends available to the DSH host (Linux: `bwrap` or a Landlock-enforcing kernel 5.13+; macOS: Seatbelt), probed at runtime by DSH itself. When no backend is usable, DSH refuses to run the command rather than bypassing the sandbox. The plugin's permission projection and argument normalization do not depend on any particular backend.
 
-The plugin checks the installed DSH package versions at startup. Mixed installations through `0.1.6-alpha.2` and unknown DSH versions fail explicitly. An initially visible target with partial escalation fields or an incompatible output definition rejects that Agent's registration; a target that omits both escalation fields is accepted as already safe. During runtime, a Preset restriction or stable provider removal makes the wrapper dormant, while an incompatible replacement is isolated to that Agent and target tool and reported without terminating the Host process. A later compatible definition is wrapped automatically.
+The plugin checks the installed DSH package versions at startup: all checked `@deepseek-ai/dsh-*` packages must report the same version, and mixed installations fail explicitly. Unknown or newer version numbers load normally, because the per-version whitelist was removed; a real incompatibility surfaces as a structural tool-contract error naming the offending tool. An initially visible target with partial escalation fields or an incompatible output definition rejects that Agent's registration; a target that omits both escalation fields is accepted as already safe. During runtime, a Preset restriction or stable provider removal makes the wrapper dormant, while an incompatible replacement is isolated to that Agent and target tool and reported without terminating the Host process. A later compatible definition is wrapped automatically.
 
 ## Quick Start & Installation
 
@@ -137,16 +137,18 @@ dsh plugin --profile headless add dsh-sandbox-escalation-fix@latest
 To pin the exact version instead of following the tag:
 
 ```sh
-dsh plugin --profile web add dsh-sandbox-escalation-fix@0.1.6-alpha2-win-linux
+dsh plugin --profile web add dsh-sandbox-escalation-fix@0.2.0-win-linux
 ```
 
 The npm package and the `.tgz` inside the GitHub Release ZIP come from the same build, so they behave identically. Restart DSH after installation.
 
 ### Release ZIP installation
 
-The `0.1.6-alpha2-win-linux` Release adds DSH `0.1.6-alpha.2` compatibility. The official release now returns immediately when a requested sandbox mode equals the call's effective mode, but its model-visible escalation schema remains registry-global and its escalation target vocabulary remains static. A file-by-file SHA-256 comparison of the 15 new-generation npm packages found no added or removed files; the changed Sandbox implementation preserves registry-global schemas and execution-time strict-widening validation, while Agent, Tools, Sandbox Policy, and Pwsh production contracts relevant to this plugin remain compatible. Therefore no Supervisor, Wrapper, schema-projection, or argument-normalization change is required. Download `dsh-sandbox-escalation-fix-0.1.6-alpha2-win-linux-release.zip`; it contains the tarball, install/uninstall scripts for Windows and POSIX shells, and the Chinese usage guide.
+The `0.2.0-win-linux` Release removes the per-version whitelist. DSH ships its `@deepseek-ai/dsh-*` package versions in lockstep with the desktop release number (the client and the bundled packages are both `0.2.2-rc.1` today), so an exact-version whitelist makes the plugin fail to load on every DSH upgrade — which is exactly what happened when DSH went `0.1.6-alpha.2` to `0.2.2-rc.1`: the plugin fiber failed with `unsupported DSH version "0.2.2-rc.1"`. `SUPPORTED_DSH_VERSIONS` is deleted; the only remaining startup version check is that every checked `@deepseek-ai/dsh-*` package reports the same version (mixed versions still hard-fail), and actual compatibility is decided at attach time by `validateTargetTool`, which structurally validates the `bash`, `pwsh`, `write`, and `edit` tool definitions (description, `parameters.type`/`parameters.properties`, `output.render`/`output.schema`). This release also adds a runtime safety net: an escalation request (`sandbox_permissions` + `justification`) whose target is not in the session's viable escalation targets (narrower than the effective mode, or approval policy `never`) is now stripped before execution instead of being passed to the execution-time strict-widening check, which used to abort the whole tool call with `sandbox escalation to "workspace-write" is not strictly wider than this call's current "danger-full-access" mode`. The `peerDependencies` for the eight `@deepseek-ai/dsh-*` packages are now the single range `>=0.1.0-rc.5`. Verified live on DSH `0.2.2-rc.1`: a stale `sandbox_permissions: "workspace-write"` sent under `danger-full-access` still let the whole tool call succeed.
 
-Close DSH before installing or upgrading the plugin. Ensure that `dsh` is available on PATH and that all checked `@deepseek-ai/dsh-*` packages use one supported version through `0.1.6-alpha.2`. Users should install only after reproducing the affected behavior.
+The `0.1.6-alpha2-win-linux` Release adds DSH `0.1.6-alpha.2` compatibility. The official release now returns immediately when a requested sandbox mode equals the call's effective mode, but its model-visible escalation schema remains registry-global and its escalation target vocabulary remains static. A file-by-file SHA-256 comparison of the 15 new-generation npm packages found no added or removed files; the changed Sandbox implementation preserves registry-global schemas and execution-time strict-widening validation, while Agent, Tools, Sandbox Policy, and Pwsh production contracts relevant to this plugin remain compatible. Therefore no Supervisor, Wrapper, schema-projection, or argument-normalization change is required. Download `dsh-sandbox-escalation-fix-0.2.0-win-linux-release.zip`; it contains the tarball, install/uninstall scripts for Windows and POSIX shells, and the Chinese usage guide.
+
+Close DSH before installing or upgrading the plugin. Ensure that `dsh` is available on PATH and that all checked `@deepseek-ai/dsh-*` packages use one and the same version. Users should install only after reproducing the affected behavior.
 
 #### Install into the default Web Profile
 
@@ -184,7 +186,7 @@ sh ./install-release.sh headless
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\build-release.ps1"
 ```
 
-The script builds `lib`, packages the npm tarball, then creates `dsh-sandbox-escalation-fix-0.1.6-alpha2-win-linux-release.zip` in `release/`. The generated directory is ignored by Git; upload only this ZIP as the GitHub Release asset.
+The script builds `lib`, packages the npm tarball, then creates `dsh-sandbox-escalation-fix-0.2.0-win-linux-release.zip` in `release/`. The generated directory is ignored by Git; upload only this ZIP as the GitHub Release asset.
 
 ### Command-line installation
 
@@ -341,7 +343,7 @@ The execution fallback remains narrow:
 Other requests remain untouched and go through normal DSH handling:
 
 - `danger-full-access` + request `danger-full-access` — ignored, tool runs normally;
-- `danger-full-access` + request `workspace-write` — not executed as Full access;
+- `danger-full-access` + request `workspace-write` — narrower than the current mode, so the pair is stripped and the call runs under the existing policy;
 - `read-only` + a wider request — enters the normal approval flow;
 - Shell escalation, paths outside the workspace, and paths that cannot be confirmed — keep their approval request.
 
@@ -386,7 +388,7 @@ The plugin listens to Agent creation, disposal, Preset changes, restrictions, an
 
 ### It won't lock you to a single DSH release
 
-The plugin supports DSH `0.1.0-rc.5`, `0.1.0-rc.6`, `0.1.0-rc.7`, `0.1.0-rc.8`, `0.1.1-rc.1`, `0.1.1-rc.2`, `0.1.2-alpha.1`, `0.1.2-alpha.2`, `0.1.2-alpha.3`, `0.1.2-alpha.4`, `0.1.2-alpha.5`, `0.1.2-rc.1`, `0.1.3-alpha.1`, `0.1.3-alpha.2`, `0.1.5-alpha.1`, `0.1.5-alpha.2`, `0.1.5-rc.1`, `0.1.5-rc.2`, `0.1.6-alpha.1`, and `0.1.6-alpha.2`. At startup it verifies that the installed `@deepseek-ai/dsh-*` packages are consistent and supported. Incompatible tool definitions fail explicitly instead of producing silent misbehavior.
+The plugin no longer keeps a per-version whitelist: DSH ships its `@deepseek-ai/dsh-*` packages in lockstep with the desktop release number, so any exact-version list locks the plugin out on the next DSH upgrade. At startup it only reads the installed package versions and requires them to agree; unknown or newer version numbers load normally, and real compatibility is decided at attach time by a structural check. Each target tool definition must satisfy the strict `bash`, `pwsh`, `write`, and `edit` contract (description, `parameters.type`/`parameters.properties`, `output.render`/`output.schema`); a mismatch is rejected explicitly with a structural tool-contract error naming the offending tool instead of producing silent misbehavior at runtime.
 
 ### It won't add configuration burden
 
@@ -414,7 +416,8 @@ Zero configuration. Install it into the Profile you actually use and start DSH a
 | `workspace-write` with approval allowed | Only `danger-full-access` is advertised |
 | `read-only` with approval allowed | `workspace-write` and `danger-full-access` are advertised |
 | Model sends the exact current mode as an escalation request | The redundant pair is removed, then the original tool runs |
-| Downgrade, unknown target, unpaired arguments, genuine escalation | Left untouched for original DSH validation |
+| A target outside the session's viable targets (a downgrade, or `never` policy) | The pair is stripped, then the call runs under the existing policy |
+| Unpaired arguments and genuine escalation | Left untouched for original DSH validation |
 | No viable escalation target | Shell description escalation tail is removed; impossible hints are stripped from denial results |
 | A dynamic Preset restricts a target tool | Its Exact Scope wrapper disappears in the same synchronous change |
 | The restriction is lifted or the provider returns | The projected wrapper is restored automatically |
@@ -470,7 +473,7 @@ import {
 |---|---|
 | The plugin does not load | Confirm installation and startup use the same `--profile`, then inspect `--dump-config` |
 | A Git install is blocked by `allowBuilds` | The installed commit still carries the removed `prepare` script; pin a newer commit that ships prebuilt `lib` with no build scripts |
-| Startup rejects DSH versions | Keep the relevant `@deepseek-ai/dsh-*` packages on one supported release candidate |
+| Startup rejects the DSH version set | Only mixed versions are rejected; keep the relevant `@deepseek-ai/dsh-*` packages on one and the same version. The version number itself is no longer restricted |
 | Agent registration reports a tool conflict | Remove the incompatible same-name wrapper or update it to implement the wrapper protocol |
 | A dynamic Preset hides tools | This is expected; the plugin mirrors `tools.restrict()` and restores wrappers when the restriction is lifted |
 | A runtime reconciliation warning appears | Check the named target's replacement definition; other tools and Agents remain active while the plugin waits for a compatible definition |
