@@ -5,8 +5,16 @@ import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 export interface EscalationNormalizationContext {
   toolName?: string
   workspaceRoot?: string
-  /** 本次调用真正可获批的升权目标；给出时，不在其中的请求一律视为不可执行。 */
-  viableTargets?: readonly SandboxMode[]
+  /**
+   * 当前有效模式下**严格更宽**的目标集合（即 DSH 的 `WIDER_MODES[effectiveMode]`）。
+   *
+   * 只用于识别"降级或未知目标"：这类请求会被执行期的变宽阶梯直接抛错并中断整次调用，
+   * 既拿不到权限也不该拖垮调用，因此成对丢弃。
+   *
+   * 注意不要把它换成"策略上可获批的目标"：审批策略为 `never` 时那个集合恒为空，
+   * 会把本来合法的升权请求也一并静默吞掉，而官方对这种情况给的是明确的审批不可用错误。
+   */
+  strictlyWiderTargets?: readonly SandboxMode[]
 }
 
 function withoutEscalation(record: Record<string, unknown>): Record<string, unknown> {
@@ -71,10 +79,11 @@ export function normalizeEscalationArguments(
   ) {
     return withoutEscalation(record)
   }
-  // 比当前模式更窄，或审批策略根本不批的目标，会在执行期被变宽阶梯直接抛错并中断整次调用；
-  // 这类参数既拿不到权限也不该拖垮调用，因此成对丢弃。
-  if (context.viableTargets !== undefined
-    && !context.viableTargets.includes(record.sandbox_permissions as SandboxMode)) {
+  // 降级或未知目标会被执行期的变宽阶梯直接抛错并中断整次调用，成对丢弃以保住这次调用。
+  // 严格更宽的目标则原样交给官方：审批策略为 `never` 时由官方给出明确的审批不可用错误，
+  // 而不是在这里静默降级。
+  if (context.strictlyWiderTargets !== undefined
+    && !context.strictlyWiderTargets.includes(record.sandbox_permissions as SandboxMode)) {
     return withoutEscalation(record)
   }
   return args

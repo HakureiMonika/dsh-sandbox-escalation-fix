@@ -1,9 +1,75 @@
 import { createRequire } from 'node:module'
 import { join } from 'node:path'
+import { escalationHintMarker, sandboxDenialMarker, WIDER_MODES } from '@deepseek-ai/dsh-sandbox'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 
 // DSH 的包版本与桌面版同步发版，逐版本白名单会随每次升级把插件锁死在旧号上，
-// 因此版本号不再作为门禁：只要受检包集版本一致，兼容性交由 validateTargetTool 的结构校验判定。
+// 因此版本号不再作为门禁：只要受检包集版本一致，兼容性交由契约断言与 validateTargetTool 判定。
+//
+// 但"只看结构"不够：validateTargetTool 只校验 description/parameters/output 的形状，
+// 校验不出沙箱模式词表、严格变宽关系或 marker 文案的变化。这些一旦漂移，
+// 插件会照常加载、照常投影错的 Schema，且结果清洗静默失效。
+// 因此激活阶段额外断言 validateSandboxContract()，让"官方升版本号"静默通过、"契约变了"大声失败。
+
+export const EXPECTED_SANDBOX_MODES = ['read-only', 'workspace-write', 'danger-full-access'] as const
+
+/** 结果清洗依赖的 marker 文案前缀；官方一旦改文案，清洗会静默失效，所以必须显式断言。 */
+const MARKER_PREFIX = '[sandbox: '
+
+export interface SandboxContractSurface {
+  /** `WIDER_MODES`：键为当前模式，值为允许升级到的更宽模式。 */
+  readonly widerModes: Readonly<Record<string, readonly string[] | undefined>>
+  /** 拒绝 marker，入参为当前模式。 */
+  readonly denialMarker: (mode: string) => string
+  /** 升级提示 marker，入参为 subject（command / operation）。 */
+  readonly escalationHint: (subject: string) => string
+}
+
+/**
+ * 断言插件依赖的沙箱契约未发生破坏性变化。
+ *
+ * 失败即抛错，让插件在激活阶段明确拒绝，而不是带着错误假设继续包装工具。
+ * 官方仅提升版本号时这里不受影响，因此不需要任何人工改门禁。
+ */
+export function validateSandboxContract(surface: SandboxContractSurface): void {
+  const modes = new Set<string>(Object.keys(surface.widerModes))
+  for (const wider of Object.values(surface.widerModes)) {
+    for (const mode of wider ?? []) modes.add(mode)
+  }
+  const actual = [...modes].sort()
+  const expected = [...EXPECTED_SANDBOX_MODES].sort()
+  const sameVocabulary = actual.length === expected.length
+    && actual.every((mode, index) => mode === expected[index])
+  if (!sameVocabulary) {
+    throw new Error(`dsh-sandbox-escalation-fix: sandbox mode vocabulary changed; expected {${expected.join(', ')}} but found {${actual.join(', ')}}. Re-audit the schema projection before running this plugin.`)
+  }
+  if (!(surface.widerModes['read-only'] ?? []).includes('workspace-write')) {
+    throw new Error('dsh-sandbox-escalation-fix: WIDER_MODES no longer maps "read-only" to "workspace-write"; the strictly-wider contract changed')
+  }
+  if (!(surface.widerModes['workspace-write'] ?? []).includes('danger-full-access')) {
+    throw new Error('dsh-sandbox-escalation-fix: WIDER_MODES no longer maps "workspace-write" to "danger-full-access"; the strictly-wider contract changed')
+  }
+  if (!surface.denialMarker('read-only').startsWith(MARKER_PREFIX)) {
+    throw new Error(`dsh-sandbox-escalation-fix: sandbox denial marker no longer starts with "${MARKER_PREFIX}"; result cleanup would silently stop matching`)
+  }
+  if (!surface.escalationHint('command').startsWith(MARKER_PREFIX)) {
+    throw new Error(`dsh-sandbox-escalation-fix: escalation hint marker no longer starts with "${MARKER_PREFIX}"; result cleanup would silently stop matching`)
+  }
+}
+
+/**
+ * 用真实运行时装配契约断言。
+ *
+ * 只做一次、放在激活阶段：契约一旦变化就拒绝激活，避免插件带着错误假设继续包装工具。
+ * 官方仅提升版本号时这里静默通过，因此不需要任何人工维护。
+ */
+export function assertSandboxContract(): void {
+  validateSandboxContract({
+    widerModes: WIDER_MODES as unknown as Record<string, readonly string[]>,
+    denialMarker: sandboxDenialMarker as (mode: string) => string,
+    escalationHint: escalationHintMarker as (subject: string) => string,
+  })
+}
 
 const DSH_PACKAGES = [
   '@deepseek-ai/dsh-agent',

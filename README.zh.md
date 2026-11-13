@@ -551,7 +551,8 @@ dsh plugin --profile <profile> remove dsh-sandbox-escalation-fix
 其他请求仍原样交给 DSH：
 
 - `danger-full-access` 下请求 `danger-full-access` → 忽略，正常执行；
-- `danger-full-access` 下请求 `workspace-write` → 目标比当前模式更窄，成对剥离后按现有权限执行；
+- 请求目标比当前模式更窄（或不在已知词表内）→ 成对剥离后按现有权限执行；
+- `approval=never` 下的严格更宽请求 → 保持原样交给官方，由 DSH 给出"审批不可用"错误，插件不静默降级；
 - `read-only` 下请求更宽模式 → 原样进入审批流程；
 - `workspace-write` 下的 Shell 提权、工作区外路径和无法确认的路径 → 保留审批请求。
 

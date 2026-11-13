@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { normalizeEscalationArguments } from '../src/argument-normalization.ts'
 import {
   validateDshRuntime,
+  validateSandboxContract,
   validateDshRuntimeFromSources,
   validateDshVersionSet,
   validateTargetTool,
@@ -126,30 +127,65 @@ describe('execution compatibility', () => {
     }
   })
 
-  it('drops escalation targets that can never be granted', () => {
+  it('drops only downgrade or unknown escalation targets', () => {
     const args = Object.freeze({
       file_path: 'out.txt',
       content: 'updated',
       sandbox_permissions: 'workspace-write',
       justification: 'stale narrower request',
     })
-    // 全权限下任何升权都是空操作。
-    expect(normalizeEscalationArguments(args, 'danger-full-access', { viableTargets: [] }))
+    // 全权限下任何升权都是空操作（等同当前模式）或降级，属于要丢弃的一类。
+    expect(normalizeEscalationArguments(args, 'danger-full-access', { strictlyWiderTargets: [] }))
       .toEqual({ file_path: 'out.txt', content: 'updated' })
     // workspace-write 下比当前更窄的请求同样批不下来。
-    expect(normalizeEscalationArguments(args, 'workspace-write', { viableTargets: ['danger-full-access'] }))
+    expect(normalizeEscalationArguments(args, 'workspace-write', { strictlyWiderTargets: ['danger-full-access'] }))
       .toEqual({ file_path: 'out.txt', content: 'updated' })
-    // 可获批的目标保持原样，交由执行期审批处理。
+    // 严格更宽的目标必须原样保留：审批策略为 `never` 时由官方给出明确的审批不可用错误，
+    // 而不是在这里静默降级成一次普通调用。
     expect(normalizeEscalationArguments(
       { ...args, sandbox_permissions: 'danger-full-access' },
       'workspace-write',
-      { viableTargets: ['danger-full-access'] },
+      { strictlyWiderTargets: ['danger-full-access'] },
     )).toEqual({
       file_path: 'out.txt',
       content: 'updated',
       sandbox_permissions: 'danger-full-access',
       justification: 'stale narrower request',
     })
+  })
+
+  it('rejects a changed sandbox contract instead of silently wrapping', () => {
+    const valid = {
+      widerModes: {
+        'read-only': ['workspace-write', 'danger-full-access'],
+        'workspace-write': ['danger-full-access'],
+      },
+      denialMarker: (mode: string) => `[sandbox: file access denied under ${mode} mode]`,
+      escalationHint: (subject: string) => `[sandbox: escalation available — retry this exact ${subject} once]`,
+    }
+    expect(() => validateSandboxContract(valid)).not.toThrow()
+
+    // 新增模式：插件未审计，必须拒绝。
+    expect(() => validateSandboxContract({
+      ...valid,
+      widerModes: { ...valid.widerModes, 'read-only': ['workspace-write', 'danger-full-access', 'network'] },
+    })).toThrow(/sandbox mode vocabulary changed/)
+
+    // 严格变宽关系被改：即使词表不变也必须拒绝。
+    expect(() => validateSandboxContract({
+      ...valid,
+      widerModes: { 'read-only': ['danger-full-access'], 'workspace-write': ['danger-full-access'] },
+    })).toThrow(/no longer maps "read-only" to "workspace-write"/)
+
+    // marker 文案前缀变化会让结果清洗静默失效，必须拒绝。
+    expect(() => validateSandboxContract({
+      ...valid,
+      denialMarker: () => 'access denied',
+    })).toThrow(/denial marker no longer starts with/)
+    expect(() => validateSandboxContract({
+      ...valid,
+      escalationHint: () => 'retry with sandbox_permissions',
+    })).toThrow(/escalation hint marker no longer starts with/)
   })
 
   it('accepts an already-safe target and rejects a partial escalation schema', () => {

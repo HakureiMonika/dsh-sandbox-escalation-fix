@@ -1,6 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import { escalationHintMarker, sandboxDenialMarker } from '@deepseek-ai/dsh-sandbox'
+import { escalationHintMarker, sandboxDenialMarker, WIDER_MODES } from '@deepseek-ai/dsh-sandbox'
 import type { SessionId } from '@deepseek-ai/dsh-session'
 import type { PostToolDecision, ToolDefinition, ToolExecutionResult } from '@deepseek-ai/dsh-tools'
 import { normalizeEscalationArguments } from './argument-normalization.ts'
@@ -64,7 +64,8 @@ function ownLayer(ctx: Context, agent: Agent, toolName: TargetToolName): Wrapper
       return next(normalizeEscalationArguments(args, policy.mode, {
         toolName,
         workspaceRoot: policy.workspaceRoot,
-        viableTargets: escalationPolicyFor(ctx, callAgent).viableTargets,
+        // 只传严格更宽集合：据此剔除降级/未知目标，合法升权仍交给官方审批与校验。
+        strictlyWiderTargets: WIDER_MODES[policy.mode] ?? [],
       }))
     },
   }

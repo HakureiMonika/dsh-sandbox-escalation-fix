@@ -3,7 +3,7 @@ import z from '@deepseek-ai/schemastery'
 import type {} from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-sandbox-policy'
 import type {} from '@deepseek-ai/dsh-user-approval'
-import { validateDshRuntime } from './compatibility.ts'
+import { assertSandboxContract, validateDshRuntime } from './compatibility.ts'
 import type { DshRuntimeCompatibility } from './compatibility.ts'
 import { Supervisor } from './supervisor.ts'
 
@@ -26,6 +26,9 @@ export function startPlugin(
   if (compatibility.mode === 'structural') {
     ctx.logger.warn('dsh-sandbox-escalation-fix: DSH package manifests are hidden by the host; using strict runtime tool-contract validation')
   }
+  // 契约门禁：只断言插件真正依赖的沙箱契约，不锁版本号。
+  // 官方单纯升版本时这里静默通过；契约变化时在这里明确拒绝激活。
+  assertSandboxContract()
   const supervisor = new Supervisor(ctx)
   ctx.effect(() => supervisor.start(), 'sandbox-escalation-fix.lifecycle()')
   if ((config.logLevel ?? 'info') !== 'silent') {
