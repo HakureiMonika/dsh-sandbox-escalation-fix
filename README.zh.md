@@ -647,7 +647,7 @@ dsh web: http://127.0.0.1:3080
 
 ### 验证证据
 
-自动测试直接使用真实 DSH `SessionStore`、`ToolRuntime`、`AgentRegistry`、`SandboxPolicyService`、`ApprovalService` 和 `SystemPrompt` 包，而不是只测试隔离 Mock。40 项测试覆盖：
+自动测试直接使用真实 DSH `SessionStore`、`ToolRuntime`、`AgentRegistry`、`SandboxPolicyService`、`ApprovalService` 和 `SystemPrompt` 包，而不是只测试隔离 Mock。41 项测试覆盖：
 
 当前运行时集成基线是公共 npm 已发布的完整 DSH `0.1.5-rc.2` 包集，并包含 `SessionProjectionService` 组合依赖。官方该版本的 Session V3、Agent API 与 Inbox API 变化未影响本插件；官方 `0.1.5-rc.2` 与 `0.1.5-rc.1` 的 15 个插件相关发布包除 `package.json` 外逐字节一致；Sandbox、Sandbox Policy、Approval、Bash、Pwsh、Session Projection 与 Scope 的发布产物无变化，升级 Schema 契约未被触及。自动测试不能完全替代真实模型 Provider 的 E2E 验证。
 

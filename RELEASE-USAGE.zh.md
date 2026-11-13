@@ -7,7 +7,7 @@
 - `@deepseek-ai/dsh-*` 的 `peerDependencies` 收敛为单一范围 `>=0.1.0-rc.5`。
 - 已在 DSH `0.2.2-rc.1` 实机验证：`danger-full-access` 下发送陈旧的 `sandbox_permissions: "workspace-write"` 时整次工具调用成功完成；模型仍可能发送升级参数，说明官方 Schema 仍未按 Session 收窄，本插件按 Session 投影模型可见 Schema 的作用仍然存在。
 - 已对 `0.1.6-alpha.1` 与 `0.1.6-alpha.2` 的新代际 15 个官方 npm 包执行逐文件 SHA-256 比较，并针对变化包复核 Sandbox 升级、Agent、Tools、Sandbox Policy 与 Pwsh 契约。
-- 完整真实 `0.1.6-alpha.2` npm 开发依赖下运行 40 项测试与 TypeScript 构建。
+- 测试套件扩到 41 项（新增不可获批升权目标的参数剥离用例），由 CI 在打标签发布时执行测试与 TypeScript 构建；真实开发依赖基线仍为 `0.1.6-alpha.2` npm 包集。
 - 正式支持 Linux：插件本体为纯 JavaScript、无平台限制；已在 Ubuntu 24.04 实机（Landlock 沙箱后端）完成安装、Schema 投影与沙箱/审批行为验证。`.sh` 脚本预期同样适用于 macOS，但尚未在真实 Mac 上测试。
 - 支持 DSH Desktop `2.0.3` 隐藏宿主包清单时的严格结构校验回退。
 - 支持通过 `link:`、工作区软链接或外部插件目录加载插件。

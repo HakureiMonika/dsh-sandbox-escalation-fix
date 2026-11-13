@@ -392,7 +392,7 @@ The plugin no longer keeps a per-version whitelist: DSH ships its `@deepseek-ai/
 
 ### It won't add configuration burden
 
-Zero configuration. Install it into the Profile you actually use and start DSH as before. The 40-test suite and TypeScript build run against the complete public `0.1.6-alpha.2` development dependency set. The 15 new-generation packages of `0.1.6-alpha.1` and `0.1.6-alpha.2` were compared file by file with SHA-256, and the changed Sandbox contract was reviewed directly. Tests cover schema projection, false workspace-file escalation normalization, out-of-workspace and unconfirmed-root preservation, PTC Mode metadata, dynamic restrictions, multi-Agent isolation, delegate and wrapper-protocol replacement, internal timeout-budget forwarding, failure-hint cleanup, and unload behavior.
+Zero configuration. Install it into the Profile you actually use and start DSH as before. The 41-test suite and TypeScript build run against the complete public `0.1.6-alpha.2` development dependency set. The 15 new-generation packages of `0.1.6-alpha.1` and `0.1.6-alpha.2` were compared file by file with SHA-256, and the changed Sandbox contract was reviewed directly. Tests cover schema projection, false workspace-file escalation normalization, out-of-workspace and unconfirmed-root preservation, PTC Mode metadata, dynamic restrictions, multi-Agent isolation, delegate and wrapper-protocol replacement, internal timeout-budget forwarding, failure-hint cleanup, and unload behavior.
 
 ### Compared with execution-only normalization
 
@@ -447,7 +447,7 @@ The calls should complete without `sandbox_permissions` argument errors or impos
 
 ### Verification Evidence
 
-The 40-test suite uses real DSH `SessionStore`, `ToolRuntime`, `AgentRegistry`, `SandboxPolicyService`, `ApprovalService`, and `SystemPrompt` packages rather than only isolated mocks. It covers the permission matrix, schema projection, false workspace-file escalation normalization, parent-traversal and external-symlink preservation, PTC Mode SDK generation, dynamic restrictions, multi-Agent isolation, delegate replacement, cooperative wrappers, hint filtering, version checks, and unload behavior.
+The 41-test suite uses real DSH `SessionStore`, `ToolRuntime`, `AgentRegistry`, `SandboxPolicyService`, `ApprovalService`, and `SystemPrompt` packages rather than only isolated mocks. It covers the permission matrix, schema projection, false workspace-file escalation normalization, parent-traversal and external-symlink preservation, PTC Mode SDK generation, dynamic restrictions, multi-Agent isolation, delegate replacement, cooperative wrappers, hint filtering, version checks, and unload behavior.
 
 The runtime integration baseline is the complete public DSH `0.1.5-rc.2` package set, including `SessionProjectionService`. The official Session V3, Agent API, and Inbox API changes do not affect this plugin; `0.1.5-rc.2` is byte-for-byte identical to `0.1.5-rc.1` across all 15 plugin-relevant published packages except `package.json`, while Sandbox, Sandbox Policy, Approval, Bash, Pwsh, Session Projection, and Scope published artifacts are unchanged and the escalation schema contract is untouched. Automated tests do not completely replace E2E validation with a real model provider.
 
